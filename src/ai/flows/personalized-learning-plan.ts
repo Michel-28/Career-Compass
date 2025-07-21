@@ -12,7 +12,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PersonalizedLearningPlanInputSchema = z.object({
-  resume: z.string().describe('The user\'s resume text.'),
+  resume: z.string().describe("The user's resume text."),
   jobRole: z.string().describe('The job role the user is interviewing for.'),
   feedback: z.string().describe('The feedback from the interview evaluator.'),
 });
@@ -36,6 +36,7 @@ const prompt = ai.definePrompt({
   prompt: `You are a career coach specializing in helping candidates prepare for job interviews.
 
   Based on the user's resume, the job role they are interviewing for, and the feedback they received, you will generate a personalized learning plan.
+  The plan should be a single, flowing paragraph of text. Do not use markdown, lists, or bold text.
 
   Resume: {{{resume}}}
   Job Role: {{{jobRole}}}
