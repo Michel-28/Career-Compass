@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -51,20 +52,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/dashboard" legacyBehavior passHref>
-                <SidebarMenuButton isActive={pathname === "/dashboard"} tooltip="Dashboard">
+              <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard">
+                <Link href="/dashboard">
                   <Home />
                   <span>Dashboard</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/interview/setup" legacyBehavior passHref>
-                <SidebarMenuButton isActive={pathname.startsWith("/interview/setup")} tooltip="New Interview">
+              <SidebarMenuButton asChild isActive={pathname.startsWith("/interview/setup")} tooltip="New Interview">
+                <Link href="/interview/setup">
                   <Briefcase />
                   <span>New Interview</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
@@ -92,7 +93,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-               <Link href="/login" legacyBehavior passHref>
+              <Link href="/login">
                 <DropdownMenuItem>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
