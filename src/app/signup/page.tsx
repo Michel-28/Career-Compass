@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, you'd handle Firebase authentication here
+    // For now, we'll just redirect to the dashboard
     router.push("/dashboard");
   };
 
@@ -24,11 +25,15 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Icons.logo className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">Welcome to Career Compass</CardTitle>
-          <CardDescription>Sign in to start your AI-powered interview practice</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight">Create an Account</CardTitle>
+          <CardDescription>Join Career Compass to start your AI-powered interview practice</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
+             <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" type="text" placeholder="Your Name" required />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="user@example.com" required />
@@ -38,16 +43,16 @@ export default function LoginPage() {
               <Input id="password" type="password" required />
             </div>
             <Button type="submit" className="w-full">
-              Sign In
+              Sign Up
             </Button>
              <Button variant="outline" className="w-full" type="button">
-              Sign In with Google
+              Sign Up with Google
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="underline text-primary">
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="underline text-primary">
+              Sign in
             </Link>
           </div>
         </CardContent>

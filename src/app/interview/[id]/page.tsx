@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition, useEffect, useRef } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Mic, Send } from "lucide-react";
+import { Loader2, Mic, MicOff, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -20,29 +20,46 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { evaluateAnswer, EvaluateAnswerOutput } from "@/ai/flows/answer-evaluator";
 
-const mockQuestions = [
-  "Can you tell me about a challenging project you worked on and how you overcame the obstacles?",
-  "How do you handle disagreements or conflicting ideas with your team members?",
-  "Where do you see yourself professionally in the next 5 years, and how does this role fit into that plan?",
-  "Describe your experience with React and its ecosystem, particularly in state management.",
-  "What do you consider your greatest professional weakness, and what steps are you taking to improve it?",
-];
+type InterviewData = {
+  jobRole: string;
+  resume: string;
+  questions: string[];
+  answers: string[];
+  evaluations: EvaluateAnswerOutput[];
+};
 
-export default function InterviewPage({ params }: { params: { id:string } }) {
+export default function InterviewPage() {
   const router = useRouter();
+  const params = useParams();
   const { toast } = useToast();
-  const { id: interviewId } = params;
+  const interviewId = params.id as string;
+  
+  const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [answers, setAnswers] = useState<string[]>([]);
   
-  const isLastQuestion = currentQuestionIndex === mockQuestions.length - 1;
-  const progress = ((currentQuestionIndex) / mockQuestions.length) * 100;
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    const data = localStorage.getItem(`interview_${interviewId}`);
+    if (data) {
+      setInterviewData(JSON.parse(data));
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Interview not found",
+        description: "Could not find the interview data. Please start a new one.",
+      });
+      router.push('/interview/setup');
+    }
+  }, [interviewId, router, toast]);
 
   const handleNext = async () => {
-     if (!answer.trim()) {
+    if (!answer.trim()) {
       toast({
         variant: "destructive",
         title: "Empty Answer",
@@ -52,17 +69,32 @@ export default function InterviewPage({ params }: { params: { id:string } }) {
     }
     
     startTransition(async () => {
-      // Simulate AI evaluation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setAnswers([...answers, answer]);
+      if (!interviewData) return;
+
+      const evaluation = await evaluateAnswer({
+        question: interviewData.questions[currentQuestionIndex],
+        answer,
+        jobRole: interviewData.jobRole,
+        resume: interviewData.resume,
+      });
+
+      const updatedData: InterviewData = {
+        ...interviewData,
+        answers: [...interviewData.answers, answer],
+        evaluations: [...interviewData.evaluations, evaluation],
+      };
+      
+      localStorage.setItem(`interview_${interviewId}`, JSON.stringify(updatedData));
+      setInterviewData(updatedData);
       setAnswer("");
+
+      const isLastQuestion = currentQuestionIndex === interviewData.questions.length - 1;
 
       if (isLastQuestion) {
         toast({
           title: "Interview Complete!",
           description: "Analyzing your answers and generating your results...",
         });
-        await new Promise(resolve => setTimeout(resolve, 1500));
         router.push(`/interview/${interviewId}/results`);
       } else {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -70,16 +102,80 @@ export default function InterviewPage({ params }: { params: { id:string } }) {
     });
   };
 
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      startRecording();
+    }
+  };
+
+  const startRecording = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        variant: "destructive",
+        title: "Browser not supported",
+        description: "Your browser does not support speech recognition.",
+      });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      toast({ title: "Recording started", description: "Speak now..." });
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      toast({ title: "Recording stopped" });
+    };
+
+    recognition.onerror = (event) => {
+      toast({ variant: "destructive", title: "Recording Error", description: event.error });
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('');
+      setAnswer(transcript);
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+  };
+
+  if (!interviewData) {
+    return (
+      <AppLayout>
+        <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </main>
+      </AppLayout>
+    );
+  }
+
+  const progress = ((currentQuestionIndex) / interviewData.questions.length) * 100;
+  const isLastQuestion = currentQuestionIndex === interviewData.questions.length - 1;
+
   return (
     <AppLayout>
       <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
         <Card className="w-full max-w-3xl animate-in fade-in-50 duration-500">
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
-                <CardTitle>Question {currentQuestionIndex + 1} of {mockQuestions.length}</CardTitle>
+                <CardTitle>Question {currentQuestionIndex + 1} of {interviewData.questions.length}</CardTitle>
                  <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive-outline">End Interview</Button>
+                    <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive">End Interview</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -90,7 +186,7 @@ export default function InterviewPage({ params }: { params: { id:string } }) {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => router.push('/dashboard')}>End Interview</AlertDialogAction>
+                      <AlertDialogAction onClick={() => router.push('/dashboard')} className="bg-destructive hover:bg-destructive/90">End Interview</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -100,7 +196,7 @@ export default function InterviewPage({ params }: { params: { id:string } }) {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="p-6 bg-muted rounded-lg min-h-[100px] flex items-center">
-              <p className="text-lg font-semibold">{mockQuestions[currentQuestionIndex]}</p>
+              <p className="text-lg font-semibold">{interviewData.questions[currentQuestionIndex]}</p>
             </div>
             <div className="space-y-4">
               <Textarea
@@ -111,9 +207,9 @@ export default function InterviewPage({ params }: { params: { id:string } }) {
                 disabled={isPending}
               />
               <div className="flex justify-between items-center">
-                <Button type="button" variant="outline" disabled={isPending}>
-                  <Mic className="mr-2 h-4 w-4" />
-                  Record Answer
+                <Button type="button" variant="outline" onClick={toggleRecording} disabled={isPending}>
+                  {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
+                  {isRecording ? "Stop Recording" : "Record Answer"}
                 </Button>
                 <Button onClick={handleNext} disabled={isPending}>
                   {isPending ? (

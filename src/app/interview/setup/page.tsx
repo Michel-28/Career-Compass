@@ -4,8 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 
+import { generateInterviewQuestions } from "@/ai/flows/question-generator";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,9 +37,16 @@ export default function InterviewSetupPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
       try {
-        // Fake action call to simulate AI generation
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const { questions } = await generateInterviewQuestions(values);
         const interviewId = crypto.randomUUID();
+
+        // Store interview data in localStorage to be accessed on the interview page
+        localStorage.setItem(`interview_${interviewId}`, JSON.stringify({
+          ...values,
+          questions,
+          answers: [],
+          evaluations: [],
+        }));
 
         toast({
           title: "Interview Ready!",
@@ -46,6 +54,7 @@ export default function InterviewSetupPage() {
         });
         router.push(`/interview/${interviewId}`);
       } catch (error) {
+        console.error(error);
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
