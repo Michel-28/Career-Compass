@@ -41,9 +41,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 lg:hidden">
-              <SidebarTrigger />
-            </Button>
+             <SidebarTrigger className="h-8 w-8 shrink-0 lg:hidden" />
             <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
               <Icons.logo className="h-6 w-6 text-primary" />
               <h1 className="text-lg font-semibold tracking-tight">Career Compass</h1>
