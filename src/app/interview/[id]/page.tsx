@@ -32,6 +32,7 @@ const mockQuestions = [
 export default function InterviewPage({ params }: { params: { id:string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const { id: interviewId } = params;
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -62,7 +63,7 @@ export default function InterviewPage({ params }: { params: { id:string } }) {
           description: "Analyzing your answers and generating your results...",
         });
         await new Promise(resolve => setTimeout(resolve, 1500));
-        router.push(`/interview/${params.id}/results`);
+        router.push(`/interview/${interviewId}/results`);
       } else {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       }
