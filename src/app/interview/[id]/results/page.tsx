@@ -133,7 +133,6 @@ export default function InterviewResultsPage() {
       let existingPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
       const interviewExists = existingPastInterviews.some((interview: any) => interview.id === interviewId);
 
-      // This check is the final safeguard.
       if (!interviewExists) {
         const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
         const newInterviewSummary = {
