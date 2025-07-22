@@ -48,40 +48,36 @@ export default function InterviewResultsPage() {
 
   useEffect(() => {
     const processResults = async () => {
-      // First, check if results are already saved in past_interviews
       const pastInterviewsStr = localStorage.getItem("past_interviews");
-      if(pastInterviewsStr) {
-        const pastInterviews = JSON.parse(pastInterviewsStr);
-        const currentInterview = pastInterviews.find((i: any) => i.id === interviewId);
-        if(currentInterview && currentInterview.results) {
-           setResults(currentInterview.results);
-           setIsLoading(false);
-           // Clean up temp data if it still exists to prevent re-processing
-           if(localStorage.getItem(`interview_${interviewId}`)) {
-              localStorage.removeItem(`interview_${interviewId}`);
-           }
-           return; // <- IMPORTANT: Exit here if results are found.
-        }
-      }
+      let pastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
+      
+      const existingInterview = pastInterviews.find((i: any) => i.id === interviewId);
 
-      // If not found in past_interviews, process the temporary data
+      if (existingInterview?.results) {
+        setResults(existingInterview.results);
+        setIsLoading(false);
+        // Clean up temporary data if it somehow still exists
+        if (localStorage.getItem(`interview_${interviewId}`)) {
+          localStorage.removeItem(`interview_${interviewId}`);
+        }
+        return; // <- Exit early, results already exist.
+      }
+      
       const dataStr = localStorage.getItem(`interview_${interviewId}`);
       if (!dataStr) {
-        // If no temp data, maybe it was processed but we landed here again. Redirect.
         router.push('/dashboard');
         return;
       }
       
+      setIsLoading(true);
       const data: InterviewData = JSON.parse(dataStr);
 
-      // If there are no evaluations, don't try to process results
       if (data.evaluations.length === 0) {
-          router.push('/dashboard');
-          return;
+        localStorage.removeItem(`interview_${interviewId}`);
+        router.push('/dashboard');
+        return;
       }
 
-      setIsLoading(true);
-      
       const avgScores = data.evaluations.reduce((acc, curr) => {
         acc.communication += curr.communication;
         acc.technical += curr.technical;
@@ -129,24 +125,18 @@ export default function InterviewResultsPage() {
 
       setResults(processedResults);
 
-      // Save to past_interviews
-      let existingPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
-      const interviewExists = existingPastInterviews.some((interview: any) => interview.id === interviewId);
-
-      if (!interviewExists) {
-        const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
-        const newInterviewSummary = {
-          id: interviewId,
-          jobRole: data.jobRole,
-          date: new Date().toISOString(),
-          overallScore: parseFloat(overallScore.toFixed(1)),
-          results: processedResults,
-        };
-        const updatedPastInterviews = [...existingPastInterviews, newInterviewSummary];
-        localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
-      }
+      const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
+      const newInterviewSummary = {
+        id: interviewId,
+        jobRole: data.jobRole,
+        date: new Date().toISOString(),
+        overallScore: parseFloat(overallScore.toFixed(1)),
+        results: processedResults,
+      };
       
-      // Finally, remove the temp data.
+      pastInterviews.push(newInterviewSummary);
+      localStorage.setItem('past_interviews', JSON.stringify(pastInterviews));
+      
       localStorage.removeItem(`interview_${interviewId}`);
       setIsLoading(false);
     };
