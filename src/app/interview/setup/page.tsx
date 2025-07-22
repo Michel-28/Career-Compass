@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,13 +14,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud, Briefcase, Users, UserCheck } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_FILE_TYPES = ["text/plain", "application/pdf", "text/markdown"];
 
+const interviewRounds = [
+  {
+    name: "Aptitude Round",
+    id: "aptitude",
+    description: "Evaluates logical reasoning and problem-solving.",
+    icon: Briefcase,
+  },
+  {
+    name: "Group Discussion",
+    id: "group-discussion",
+    description: "Simulates a group discussion to test communication.",
+    icon: Users,
+  },
+  {
+    name: "HR Round",
+    id: "hr",
+    description: "Assesses personality, behavior, and cultural fit.",
+    icon: UserCheck,
+  },
+];
+
 const formSchema = z.object({
   jobRole: z.string().min(2, { message: "Job role must be at least 2 characters." }),
+  interviewRound: z.enum(["aptitude", "group-discussion", "hr"], {
+    required_error: "You need to select an interview round.",
+  }),
   resumeFile: z
     .any()
     .refine((files) => files?.length == 1, "Resume is required.")
@@ -32,8 +59,6 @@ const formSchema = z.object({
 
 const readFileAsText = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-        // For PDF, we can't just read it as text. We will just send a placeholder.
-        // In a real-world scenario, you would use a library like pdf.js or an API to extract text.
         if (file.type === "application/pdf") {
             resolve(`This is a PDF resume for the role. The file name is ${file.name}. Please generate questions based on a typical resume for this role.`);
             return;
@@ -65,10 +90,13 @@ export default function InterviewSetupPage() {
         const resumeFile = values.resumeFile[0];
         const resumeText = await readFileAsText(resumeFile);
         
-        const { questions } = await generateInterviewQuestions({ jobRole: values.jobRole, resume: resumeText });
+        const { questions } = await generateInterviewQuestions({ 
+            jobRole: values.jobRole, 
+            resume: resumeText,
+            interviewRound: values.interviewRound,
+        });
         const interviewId = crypto.randomUUID();
 
-        // Store interview data in localStorage to be accessed on the interview page
         localStorage.setItem(`interview_${interviewId}`, JSON.stringify({
           jobRole: values.jobRole,
           resume: resumeText,
@@ -87,7 +115,7 @@ export default function InterviewSetupPage() {
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
-          description: "There was a problem setting up your interview. Please check the file and try again.",
+          description: "There was a problem setting up your interview. Please check your selections and try again.",
         });
       }
     });
@@ -101,12 +129,50 @@ export default function InterviewSetupPage() {
             <CardHeader>
               <CardTitle className="text-2xl">New Mock Interview</CardTitle>
               <CardDescription>
-                Provide the job role and upload your resume. We'll generate tailored questions for you.
+                Select an interview round, provide the job role, and upload your resume.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  
+                  <FormField
+                    control={form.control}
+                    name="interviewRound"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-base">Select Interview Round</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                          >
+                            {interviewRounds.map((round) => (
+                                <FormItem key={round.id}>
+                                    <FormControl>
+                                        <RadioGroupItem value={round.id} id={round.id} className="peer sr-only" />
+                                    </FormControl>
+                                    <Label
+                                    htmlFor={round.id}
+                                    className={cn(
+                                        "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                                        "cursor-pointer"
+                                    )}
+                                    >
+                                        <round.icon className="mb-3 h-6 w-6" />
+                                        {round.name}
+                                        <span className="text-xs text-muted-foreground mt-1 text-center">{round.description}</span>
+                                    </Label>
+                                </FormItem>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="jobRole"
