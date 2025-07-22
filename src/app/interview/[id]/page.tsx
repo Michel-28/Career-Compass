@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
-import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Mic, MicOff, Send, Volume2 } from "lucide-react";
+import { Loader2, Mic, MicOff, Send, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -22,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { evaluateAnswer, EvaluateAnswerOutput } from "@/ai/flows/answer-evaluator";
-import { textToSpeech } from "@/ai/flows/text-to-speech";
+import { generateInterviewVideo } from "@/ai/flows/generate-interview-video";
 
 type InterviewData = {
   jobRole: string;
@@ -42,12 +41,12 @@ export default function InterviewPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [isEvaluating, startEvaluationTransition] = useTransition();
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const videoPlayerRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const data = localStorage.getItem(`interview_${interviewId}`);
@@ -62,7 +61,6 @@ export default function InterviewPage() {
       router.push('/interview/setup');
     }
     
-    // Initialize the SpeechRecognition API
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
@@ -77,7 +75,6 @@ export default function InterviewPage() {
 
       recognition.onend = () => {
         setIsRecording(false);
-        // Do not show toast here, it's better to show it when transcription is done.
       };
 
       recognition.onerror = (event) => {
@@ -102,28 +99,33 @@ export default function InterviewPage() {
 
   }, [interviewId, router, toast]);
 
-  const handleSpeakQuestion = async () => {
-    if (!interviewData || isSynthesizing) return;
+  const handleGenerateVideo = async () => {
+    if (!interviewData || isGeneratingVideo) return;
     
-    setIsSynthesizing(true);
+    setVideoUrl(null);
+    setIsGeneratingVideo(true);
     try {
       const questionText = interviewData.questions[currentQuestionIndex];
-      const { audioDataUri } = await textToSpeech(questionText);
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = audioDataUri;
-        audioPlayerRef.current.play();
-      }
+      const { videoUrl } = await generateInterviewVideo({ question: questionText });
+      setVideoUrl(videoUrl);
     } catch (error) {
-      console.error("Text-to-speech error:", error);
+      console.error("Video generation error:", error);
       toast({
         variant: "destructive",
-        title: "Could not play audio",
-        description: "There was an error generating the voice for the question.",
+        title: "Could not generate video",
+        description: "There was an error generating the video for the question. Please try again.",
       });
     } finally {
-      setIsSynthesizing(false);
+      setIsGeneratingVideo(false);
     }
   };
+
+  useEffect(() => {
+    if (videoUrl && videoPlayerRef.current) {
+      videoPlayerRef.current.src = videoUrl;
+      videoPlayerRef.current.play();
+    }
+  }, [videoUrl]);
 
 
   const handleSubmit = async () => {
@@ -155,6 +157,7 @@ export default function InterviewPage() {
       localStorage.setItem(`interview_${interviewId}`, JSON.stringify(updatedData));
       setInterviewData(updatedData);
       setAnswer("");
+      setVideoUrl(null); // Reset video for next question
 
       const isLastQuestion = currentQuestionIndex === interviewData.questions.length - 1;
 
@@ -198,28 +201,34 @@ export default function InterviewPage() {
 
   const progress = ((currentQuestionIndex) / interviewData.questions.length) * 100;
   const isLastQuestion = currentQuestionIndex === interviewData.questions.length - 1;
-  const isPending = isEvaluating || isTranscribing || isSynthesizing;
+  const isPending = isEvaluating || isGeneratingVideo;
 
   return (
     <AppLayout>
       <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
         <Card className="w-full max-w-4xl animate-in fade-in-50 duration-500 grid md:grid-cols-2">
           <div className="p-6 flex flex-col items-center justify-center bg-muted/50 rounded-l-lg">
-             <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
-                <Image 
-                    src="https://placehold.co/300x300.png" 
-                    alt="AI Interviewer Avatar"
-                    data-ai-hint="professional headshot"
-                    fill
-                    style={{ objectFit: 'cover' }}
-                />
+             <div className="relative w-full aspect-video rounded-lg overflow-hidden border-4 border-primary/20 shadow-lg bg-black flex items-center justify-center">
+                {isGeneratingVideo ? (
+                    <div className="text-center text-white">
+                        <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                        <p>AI interviewer is preparing...</p>
+                    </div>
+                ) : videoUrl ? (
+                    <video ref={videoPlayerRef} className="w-full h-full object-cover" controls={false} autoPlay playsInline />
+                ) : (
+                    <div className="text-center text-muted-foreground p-4">
+                        <Video className="h-12 w-12 mx-auto mb-2" />
+                        <p>Click "Ask Question" to start.</p>
+                    </div>
+                )}
              </div>
              <div className="mt-6 p-4 text-center bg-muted rounded-lg w-full">
                 <p className="text-lg font-semibold flex-1">{interviewData.questions[currentQuestionIndex]}</p>
              </div>
-             <Button size="lg" variant="ghost" onClick={handleSpeakQuestion} disabled={isSynthesizing} className="mt-4">
-                 {isSynthesizing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
-                 {isSynthesizing ? 'Playing...' : 'Ask Question'}
+             <Button size="lg" variant="ghost" onClick={handleGenerateVideo} disabled={isGeneratingVideo} className="mt-4">
+                 {isGeneratingVideo ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Video className="mr-2 h-5 w-5" />}
+                 {isGeneratingVideo ? 'Generating Video...' : 'Ask Question'}
               </Button>
           </div>
 
@@ -278,7 +287,6 @@ export default function InterviewPage() {
           </div>
         </Card>
       </main>
-      <audio ref={audioPlayerRef} className="hidden" onEnded={() => setIsSynthesizing(false)}/>
     </AppLayout>
   );
 }

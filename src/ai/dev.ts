@@ -5,4 +5,4 @@ import '@/ai/flows/generate-improvement-feedback.ts';
 import '@/ai/flows/question-generator.ts';
 import '@/ai/flows/personalized-learning-plan.ts';
 import '@/ai/flows/answer-evaluator.ts';
-import '@/ai/flows/text-to-speech.ts';
+import '@/ai/flows/generate-interview-video.ts';
