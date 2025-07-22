@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
@@ -202,66 +203,82 @@ export default function InterviewPage() {
   return (
     <AppLayout>
       <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
-        <Card className="w-full max-w-3xl animate-in fade-in-50 duration-500">
-          <CardHeader>
-            <div className="flex justify-between items-center mb-2">
-                <CardTitle>Question {currentQuestionIndex + 1} of {interviewData.questions.length}</CardTitle>
-                 <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive">End Interview</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure you want to end the interview?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Your progress will not be saved, and you will be redirected to the dashboard.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => router.push('/dashboard')} className="bg-destructive hover:bg-destructive/90">End Interview</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-            </div>
-            <CardDescription className="pt-2">Read the question carefully. You can type or record your answer.</CardDescription>
-            <Progress value={progress} className="mt-4" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-6 bg-muted rounded-lg min-h-[100px] flex items-center justify-between gap-4">
-              <p className="text-lg font-semibold flex-1">{interviewData.questions[currentQuestionIndex]}</p>
-              <Button size="icon" variant="ghost" onClick={handleSpeakQuestion} disabled={isSynthesizing}>
-                 {isSynthesizing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
-                 <span className="sr-only">Read question aloud</span>
+        <Card className="w-full max-w-4xl animate-in fade-in-50 duration-500 grid md:grid-cols-2">
+          <div className="p-6 flex flex-col items-center justify-center bg-muted/50 rounded-l-lg">
+             <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                <Image 
+                    src="https://placehold.co/300x300.png" 
+                    alt="AI Interviewer Avatar"
+                    data-ai-hint="professional headshot"
+                    fill
+                    style={{ objectFit: 'cover' }}
+                />
+             </div>
+             <div className="mt-6 p-4 text-center bg-muted rounded-lg w-full">
+                <p className="text-lg font-semibold flex-1">{interviewData.questions[currentQuestionIndex]}</p>
+             </div>
+             <Button size="lg" variant="ghost" onClick={handleSpeakQuestion} disabled={isSynthesizing} className="mt-4">
+                 {isSynthesizing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
+                 {isSynthesizing ? 'Playing...' : 'Ask Question'}
               </Button>
-            </div>
-            <div className="space-y-4">
-              <Textarea
-                placeholder="Type your answer here..."
-                className="min-h-[150px] text-base"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                disabled={isPending}
-              />
-              <div className="flex justify-between items-center">
-                <Button type="button" variant="outline" onClick={toggleRecording} disabled={isPending || isEvaluating}>
-                  {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-                  {isRecording ? "Stop Recording" : "Record Answer"}
-                </Button>
-                <Button onClick={handleSubmit} disabled={isPending || !answer}>
-                  {isEvaluating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
-                  {isEvaluating ? "Evaluating..." : (isLastQuestion ? "Finish & View Results" : "Submit & Next Question")}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
+          </div>
+
+          <div className="p-6">
+            <CardHeader className="px-0 pt-0">
+                <div className="flex justify-between items-start mb-2">
+                    <div>
+                        <CardTitle>Question {currentQuestionIndex + 1} of {interviewData.questions.length}</CardTitle>
+                        <CardDescription className="pt-1">Record or type your response below.</CardDescription>
+                    </div>
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive">End</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to end the interview?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your progress will be lost and you will be returned to the dashboard.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => router.push('/dashboard')} className="bg-destructive hover:bg-destructive/90">End Interview</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+                <Progress value={progress} className="mt-4" />
+            </CardHeader>
+            <CardContent className="space-y-6 px-0 pb-0">
+                <div className="space-y-4">
+                <Textarea
+                    placeholder="Your answer will appear here..."
+                    className="min-h-[200px] text-base"
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    disabled={isPending}
+                />
+                <div className="flex justify-between items-center">
+                    <Button type="button" variant="outline" onClick={toggleRecording} disabled={isPending || isEvaluating}>
+                    {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
+                    {isRecording ? "Stop Recording" : "Record Answer"}
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={isPending || !answer}>
+                    {isEvaluating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="mr-2 h-4 w-4" />
+                    )}
+                    {isEvaluating ? "Evaluating..." : (isLastQuestion ? "Finish & View Results" : "Submit & Next")}
+                    </Button>
+                </div>
+                </div>
+            </CardContent>
+          </div>
         </Card>
       </main>
-      <audio ref={audioPlayerRef} className="hidden" />
+      <audio ref={audioPlayerRef} className="hidden" onEnded={() => setIsSynthesizing(false)}/>
     </AppLayout>
   );
 }
