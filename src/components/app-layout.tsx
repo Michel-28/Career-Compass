@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   Briefcase,
   Home,
@@ -33,7 +34,7 @@ import { useTheme } from "@/components/theme-provider";
 
 const CareerCompassLogo = () => (
     <div className="flex items-center gap-2">
-        <GraduationCap className="h-6 w-6 text-indigo-600" />
+        <GraduationCap className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
         <span className="text-xl font-bold text-indigo-900 dark:text-indigo-400">Career Compass</span>
     </div>
 )
@@ -41,6 +42,11 @@ const CareerCompassLogo = () => (
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -80,7 +86,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 className="rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             >
-                {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                {mounted && (theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />)}
             </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
