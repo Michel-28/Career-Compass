@@ -22,17 +22,17 @@ export default function LoginPage() {
   return (
     <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Left Panel */}
-      <div className="flex flex-col items-center justify-center p-6 lg:p-8 bg-gradient-to-b from-purple-50 via-white to-white">
+      <div className="flex flex-col items-center justify-center p-6 lg:p-8 bg-gradient-to-b from-purple-50 via-white to-white dark:from-background dark:to-background">
         <div className="w-full max-w-md space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Welcome to Career Compass</h1>
-            <p className="mt-2 text-gray-600">Transform your hiring process with AI-powered intelligence</p>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Welcome to Career Compass</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Transform your hiring process with AI-powered intelligence</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="Enter your email" required className="bg-white" />
+              <Input id="email" type="email" placeholder="Enter your email" required />
             </div>
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -47,7 +47,7 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     required
-                    className="bg-white pr-10"
+                    className="pr-10"
                     />
                     <button
                     type="button"
@@ -63,19 +63,19 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-gray-600">
+          <p className="text-center text-gray-600 dark:text-gray-400">
             Don't have an account?{" "}
             <Link href="/signup" className="font-semibold text-blue-600 hover:underline">
               Sign up
             </Link>
           </p>
 
-          <div className="p-6 rounded-lg bg-blue-50 border-2 border-orange-400">
+          <div className="p-6 rounded-lg bg-blue-50 border-2 border-orange-400 dark:bg-secondary dark:border-orange-500">
              <div className="flex items-center gap-3">
                 <GraduationCap className="h-6 w-6 text-orange-500" />
-                <h3 className="text-lg font-bold text-gray-800">343+ Students and Counting!</h3>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-primary-foreground">343+ Students and Counting!</h3>
              </div>
-             <p className="mt-2 text-gray-600">
+             <p className="mt-2 text-gray-600 dark:text-muted-foreground">
                 Students from various colleges are actively using our platform to enhance their skills, gain confidence, and ace their interviews.
              </p>
           </div>
