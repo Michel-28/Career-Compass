@@ -36,6 +36,7 @@ const prompt = ai.definePrompt({
   name: 'answerEvaluatorPrompt',
   input: {schema: EvaluateAnswerInputSchema},
   output: {schema: EvaluateAnswerOutputSchema},
+  model: 'gemini-pro',
   prompt: `You are an expert interview evaluator providing feedback to candidates.
 
   Evaluate the candidate's answer to the interview question based on their communication skills, technical skills, and confidence level.
@@ -63,14 +64,7 @@ const evaluateAnswerFlow = ai.defineFlow(
     outputSchema: EvaluateAnswerOutputSchema,
   },
   async input => {
-    const llmResponse = await ai.generate({
-      model: googleAI.model('gemini-pro'),
-      prompt: prompt.render(input) as any,
-      output: {
-        schema: EvaluateAnswerOutputSchema
-      }
-    });
-
-    return llmResponse.output()!;
+    const {output} = await prompt(input);
+    return output!;
   }
 );
