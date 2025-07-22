@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const EvaluateAnswerInputSchema = z.object({
@@ -62,7 +63,14 @@ const evaluateAnswerFlow = ai.defineFlow(
     outputSchema: EvaluateAnswerOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const llmResponse = await ai.generate({
+      model: googleAI.model('gemini-pro'),
+      prompt: prompt.render(input) as any,
+      output: {
+        schema: EvaluateAnswerOutputSchema
+      }
+    });
+
+    return llmResponse.output()!;
   }
 );
