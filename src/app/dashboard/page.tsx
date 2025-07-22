@@ -21,7 +21,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const storedInterviews = localStorage.getItem("past_interviews");
     if (storedInterviews) {
-      setPastInterviews(JSON.parse(storedInterviews));
+      const parsedInterviews: PastInterview[] = JSON.parse(storedInterviews);
+      // Failsafe: Filter out duplicates to prevent crashes from corrupted local storage.
+      const uniqueInterviews = parsedInterviews.filter(
+        (interview, index, self) =>
+          index === self.findIndex((t) => t.id === interview.id)
+      );
+      setPastInterviews(uniqueInterviews);
     }
   }, []);
 

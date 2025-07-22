@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppLayout } from "@/components/app-layout";
@@ -50,18 +50,17 @@ export default function InterviewResultsPage() {
     const processResults = async () => {
       // **Critical Fix**: Check for fully processed results first to prevent any duplication.
       const pastInterviewsStr = localStorage.getItem("past_interviews");
-      if (pastInterviewsStr) {
-        const pastInterviews = JSON.parse(pastInterviewsStr);
-        const existingInterview = pastInterviews.find((i: any) => i.id === interviewId);
-        if (existingInterview?.results) {
-          setResults(existingInterview.results);
-          setIsLoading(false);
-          // Clean up temp data if it still exists for any reason
-          if (localStorage.getItem(`interview_${interviewId}`)) {
-            localStorage.removeItem(`interview_${interviewId}`);
-          }
-          return; // Exit early, results are already processed and stored.
+      const currentPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
+      
+      const existingInterview = currentPastInterviews.find((i: any) => i.id === interviewId);
+      if (existingInterview?.results) {
+        setResults(existingInterview.results);
+        setIsLoading(false);
+        // Clean up temp data if it still exists for any reason
+        if (localStorage.getItem(`interview_${interviewId}`)) {
+          localStorage.removeItem(`interview_${interviewId}`);
         }
+        return; // Exit early, results are already processed and stored.
       }
       
       // If no stored results, proceed with processing the temporary interview data.
@@ -139,7 +138,6 @@ export default function InterviewResultsPage() {
         results: processedResults,
       };
       
-      const currentPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
       // Ensure no duplicates are added even with this new logic.
       const updatedPastInterviews = currentPastInterviews.filter((i: any) => i.id !== interviewId);
       updatedPastInterviews.unshift(newInterviewSummary);
@@ -248,5 +246,3 @@ export default function InterviewResultsPage() {
     </AppLayout>
   );
 }
-
-    
