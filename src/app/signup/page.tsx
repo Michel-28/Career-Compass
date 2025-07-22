@@ -1,94 +1,128 @@
 
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
+import { Eye, EyeOff, GraduationCap } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle Firebase authentication here
     router.push("/dashboard");
   };
 
   return (
     <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2">
-       <div className="hidden bg-muted md:flex flex-col items-center justify-center p-10 text-center relative">
-        <div className="absolute top-8 left-8 flex items-center gap-2 text-lg font-semibold">
-           <Icons.logo className="h-6 w-6 text-primary" />
-           <span>Career Compass</span>
-        </div>
-        <div className="max-w-md">
-            <Image 
-                src="https://placehold.co/800x600.png" 
-                alt="Signup illustration" 
-                width={800} 
-                height={600} 
-                className="rounded-lg shadow-xl"
-                data-ai-hint="career success"
-            />
-        </div>
-        <div className="mt-8 max-w-md">
-            <h1 className="text-3xl font-bold tracking-tight">Join a Community of Ambitious Professionals</h1>
-            <p className="text-muted-foreground mt-2">
-                Create your account to start practicing and sharpening your interview skills today.
-            </p>
+      {/* Left Panel */}
+      <div className="flex flex-col items-center justify-center p-6 lg:p-8 bg-gradient-to-b from-purple-50 via-white to-white">
+        <div className="w-full max-w-md space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Create your Account</h1>
+            <p className="mt-2 text-gray-600">Join a community of ambitious professionals.</p>
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" type="text" placeholder="Enter your full name" required className="bg-white" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="Enter your email" required className="bg-white" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                    <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    required
+                    className="bg-white pr-10"
+                    />
+                    <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+                    >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                </div>
+            </div>
+            <Button type="submit" className="w-full text-lg h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold">
+              Create Account
+            </Button>
+          </form>
+
+          <p className="text-center text-gray-600">
+            Already have an account?{" "}
+            <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+              Sign in
+            </Link>
+          </p>
+
+          <div className="p-6 rounded-lg bg-blue-50 border-2 border-orange-400">
+             <div className="flex items-center gap-3">
+                <GraduationCap className="h-6 w-6 text-orange-500" />
+                <h3 className="text-lg font-bold text-gray-800">343+ Students and Counting!</h3>
+             </div>
+             <p className="mt-2 text-gray-600">
+                Students from various colleges are actively using our platform to enhance their skills, gain confidence, and ace their interviews.
+             </p>
+          </div>
         </div>
       </div>
-       <div className="flex items-center justify-center p-6 lg:p-8">
-        <Card className="w-full max-w-sm mx-auto border-0 shadow-none md:border md:shadow-sm">
-          <CardHeader className="text-left">
-            <CardTitle className="text-2xl font-bold tracking-tight">Create an Account</CardTitle>
-            <CardDescription>Get started with your personalized interview prep.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSignup} className="space-y-4">
-              <Button variant="outline" className="w-full" type="button">
-                  <Icons.logo className="mr-2 h-4 w-4" />
-                  Sign Up with Google
-              </Button>
-               <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                        </span>
-                    </div>
+
+      {/* Right Panel */}
+      <div className="hidden md:flex flex-col justify-center p-12 bg-gradient-to-br from-blue-600 to-purple-700 text-white">
+        <div className="max-w-lg mx-auto">
+            <h2 className="text-4xl font-bold">Why Choose Career Compass?</h2>
+            <p className="mt-4 text-lg opacity-90">Our AI-powered platform offers comprehensive interview preparation tools to help you succeed.</p>
+
+            <div className="mt-10 space-y-6">
+                <div>
+                    <h3 className="font-bold text-xl">AI-Powered Mock Interviews</h3>
+                    <p className="mt-1 opacity-90">Experience realistic, role-specific simulations.</p>
                 </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" type="text" placeholder="Your Name" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="user@example.com" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
-              </div>
-              <Button type="submit" className="w-full">
-                Create Account
-              </Button>
-            </form>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/login" className="underline text-primary font-medium">
-                Sign in
-              </Link>
+                 <div>
+                    <h3 className="font-bold text-xl">Comprehensive Feedback</h3>
+                    <p className="mt-1 opacity-90">Get detailed performance reports with strengths & weaknesses.</p>
+                </div>
+                 <div>
+                    <h3 className="font-bold text-xl">Flexible Scheduling</h3>
+                    <p className="mt-1 opacity-90">Book mock interviews at your convenience, 24/7 availability.</p>
+                </div>
+                 <div>
+                    <h3 className="font-bold text-xl">Performance Analytics</h3>
+                    <p className="mt-1 opacity-90">Track progress with detailed insights.</p>
+                </div>
+                 <div>
+                    <h3 className="font-bold text-xl">Institutional Insights</h3>
+                    <p className="mt-1 opacity-90">Colleges can monitor student performance.</p>
+                </div>
+                <div>
+                    <h3 className="font-bold text-xl">Instant Results</h3>
+                    <p className="mt-1 opacity-90">Get immediate feedback after each session.</p>
+                </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="mt-12">
+                <h3 className="text-2xl font-bold">Testimonials</h3>
+                <div className="mt-4 p-6 rounded-xl bg-white/20 backdrop-blur-sm">
+                    <p className="italic">"Thanks to Career Compass, I felt much more confident during my actual interviews. The platform's analytics helped me identify and improve my weak areas."</p>
+                    <p className="mt-4 font-bold">Rahul Verma</p>
+                    <p className="text-sm opacity-90">Recent Graduate</p>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
   );
