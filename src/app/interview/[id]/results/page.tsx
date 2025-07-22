@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppLayout } from "@/components/app-layout";
@@ -48,37 +48,40 @@ export default function InterviewResultsPage() {
 
   useEffect(() => {
     const processResults = async () => {
-      // Step 1: Check if results are already processed and stored.
+      // **Critical Fix**: Check for fully processed results first to prevent any duplication.
       const pastInterviewsStr = localStorage.getItem("past_interviews");
-      let pastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
-      const existingInterview = pastInterviews.find((i: any) => i.id === interviewId);
-
-      if (existingInterview?.results) {
-        setResults(existingInterview.results);
-        setIsLoading(false);
-        if (localStorage.getItem(`interview_${interviewId}`)) {
-          localStorage.removeItem(`interview_${interviewId}`);
+      if (pastInterviewsStr) {
+        const pastInterviews = JSON.parse(pastInterviewsStr);
+        const existingInterview = pastInterviews.find((i: any) => i.id === interviewId);
+        if (existingInterview?.results) {
+          setResults(existingInterview.results);
+          setIsLoading(false);
+          // Clean up temp data if it still exists for any reason
+          if (localStorage.getItem(`interview_${interviewId}`)) {
+            localStorage.removeItem(`interview_${interviewId}`);
+          }
+          return; // Exit early, results are already processed and stored.
         }
-        return;
       }
       
-      // Step 2: If no stored results, process the temporary interview data.
+      // If no stored results, proceed with processing the temporary interview data.
       const dataStr = localStorage.getItem(`interview_${interviewId}`);
       if (!dataStr) {
+        // If there's no temp data and no stored results, the interview is invalid.
         router.push('/dashboard');
         return;
       }
       
-      setIsLoading(true);
       const data: InterviewData = JSON.parse(dataStr);
 
       if (!data.evaluations || data.evaluations.length === 0) {
+        // Invalid data, redirect to dashboard.
         localStorage.removeItem(`interview_${interviewId}`);
         router.push('/dashboard');
         return;
       }
 
-      // Step 3: Generate new results with AI (only runs once).
+      // Generate new results with AI (this will now only run once).
       const avgScores = data.evaluations.reduce((acc, curr) => {
         acc.communication += curr.communication;
         acc.technical += curr.technical;
@@ -126,7 +129,7 @@ export default function InterviewResultsPage() {
 
       setResults(processedResults);
 
-      // Step 4: Save the newly generated results to the persistent list.
+      // Save the newly generated results to the persistent list.
       const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
       const newInterviewSummary = {
         id: interviewId,
@@ -136,11 +139,13 @@ export default function InterviewResultsPage() {
         results: processedResults,
       };
       
-      const updatedPastInterviews = pastInterviews.filter((i: any) => i.id !== interviewId);
+      const currentPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
+      // Ensure no duplicates are added even with this new logic.
+      const updatedPastInterviews = currentPastInterviews.filter((i: any) => i.id !== interviewId);
       updatedPastInterviews.unshift(newInterviewSummary);
       localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
       
-      // Step 5: Clean up the temporary data now that it's been processed.
+      // Clean up the temporary data now that it's been processed and saved.
       localStorage.removeItem(`interview_${interviewId}`);
       setIsLoading(false);
     };
