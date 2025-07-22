@@ -123,19 +123,23 @@ export default function InterviewResultsPage() {
       setResults(processedResults);
 
       // Save to past_interviews
-      const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
-      const newInterviewSummary = {
-        id: interviewId,
-        jobRole: data.jobRole,
-        date: new Date().toISOString(),
-        overallScore: parseFloat(overallScore.toFixed(1)),
-        results: processedResults, // Save full results
-      };
-      
       const pastInterviewsStr = localStorage.getItem('past_interviews');
       const pastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
-      const updatedPastInterviews = [...pastInterviews, newInterviewSummary];
-      localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
+      
+      const interviewExists = pastInterviews.some((interview: any) => interview.id === interviewId);
+
+      if (!interviewExists) {
+        const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
+        const newInterviewSummary = {
+          id: interviewId,
+          jobRole: data.jobRole,
+          date: new Date().toISOString(),
+          overallScore: parseFloat(overallScore.toFixed(1)),
+          results: processedResults, // Save full results
+        };
+        const updatedPastInterviews = [...pastInterviews, newInterviewSummary];
+        localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
+      }
       
       // Clean up the temporary interview data
       localStorage.removeItem(`interview_${interviewId}`);
