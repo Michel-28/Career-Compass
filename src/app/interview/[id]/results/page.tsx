@@ -54,27 +54,24 @@ export default function InterviewResultsPage() {
       const existingInterview = pastInterviews.find((i: any) => i.id === interviewId);
 
       if (existingInterview?.results) {
-        // If results exist, display them and stop.
         setResults(existingInterview.results);
         setIsLoading(false);
-        // Clean up temporary data if it somehow still exists.
         if (localStorage.getItem(`interview_${interviewId}`)) {
           localStorage.removeItem(`interview_${interviewId}`);
         }
-        return; // <-- CRITICAL: Exit early to prevent re-processing.
+        return;
       }
       
       // Step 2: If no stored results, process the temporary interview data.
       const dataStr = localStorage.getItem(`interview_${interviewId}`);
       if (!dataStr) {
-        // If there's no temporary data either, something is wrong. Go to dashboard.
         router.push('/dashboard');
         return;
       }
       
+      setIsLoading(true);
       const data: InterviewData = JSON.parse(dataStr);
 
-      // Handle cases with no evaluations (e.g., user ended early).
       if (!data.evaluations || data.evaluations.length === 0) {
         localStorage.removeItem(`interview_${interviewId}`);
         router.push('/dashboard');
@@ -139,9 +136,8 @@ export default function InterviewResultsPage() {
         results: processedResults,
       };
       
-      // Update the list of past interviews, ensuring no duplicates.
       const updatedPastInterviews = pastInterviews.filter((i: any) => i.id !== interviewId);
-      updatedPastInterviews.push(newInterviewSummary);
+      updatedPastInterviews.unshift(newInterviewSummary);
       localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
       
       // Step 5: Clean up the temporary data now that it's been processed.
@@ -247,5 +243,3 @@ export default function InterviewResultsPage() {
     </AppLayout>
   );
 }
-
-    
