@@ -64,10 +64,6 @@ const prompt = ai.definePrompt({
   {{/if}}
 
   Questions:`,
-  // This is a workaround for handlebars not supporting complex expressions.
-  // We are providing a custom helper to check for equality.
-  // This can be removed once handlebars supports this natively.
-  // See: https://github.com/handlebars-lang/handlebars.js/issues/1654
   helpers: {
     eq: (a: any, b: any) => a === b,
   },
