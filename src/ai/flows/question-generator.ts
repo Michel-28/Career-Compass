@@ -39,7 +39,6 @@ export async function generateInterviewQuestions(
 
 const prompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
-  model: 'googleai/gemini-pro',
   input: {schema: z.object({
     resume: z.string(),
     jobRole: z.string(),
