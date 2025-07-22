@@ -40,6 +40,11 @@ const prompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
   input: {schema: GenerateInterviewQuestionsInputSchema},
   output: {schema: GenerateInterviewQuestionsOutputSchema},
+  config: {
+    helpers: {
+      eq: (a: any, b: any) => a === b,
+    },
+  },
   prompt: `You are an expert interview question generator.
 
   Your task is to generate a list of relevant interview questions based on the user's resume, their target job role, and the specific interview round they are preparing for.
@@ -64,9 +69,6 @@ const prompt = ai.definePrompt({
   {{/if}}
 
   Questions:`,
-  helpers: {
-    eq: (a: any, b: any) => a === b,
-  },
 });
 
 const generateInterviewQuestionsFlow = ai.defineFlow(
