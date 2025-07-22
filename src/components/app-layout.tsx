@@ -14,7 +14,8 @@ import {
   BarChart2,
   BookUser,
   Crown,
-  GraduationCap
+  GraduationCap,
+  Moon
 } from "lucide-react";
 
 import {
@@ -28,16 +29,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Icons } from "@/components/icons";
+import { useTheme } from "@/components/theme-provider";
 
 const CareerCompassLogo = () => (
     <div className="flex items-center gap-2">
         <GraduationCap className="h-6 w-6 text-indigo-600" />
-        <span className="text-xl font-bold text-indigo-900">Career Compass</span>
+        <span className="text-xl font-bold text-indigo-900 dark:text-indigo-400">Career Compass</span>
     </div>
 )
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -48,8 +51,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-white">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 z-50">
+    <div className="flex min-h-screen w-full flex-col bg-white dark:bg-background">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white dark:bg-background px-4 md:px-6 z-50">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <CareerCompassLogo />
         </Link>
@@ -58,8 +61,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link
               key={link.href}
               href="#" // Changed to # as these pages don't exist
-              className={`transition-colors hover:text-gray-900 ${
-                pathname === link.href ? "text-gray-900 font-semibold" : "text-gray-500"
+              className={`transition-colors hover:text-gray-900 dark:hover:text-gray-50 ${
+                pathname === link.href ? "text-gray-900 dark:text-gray-50 font-semibold" : "text-gray-500 dark:text-gray-400"
               }`}
             >
               {link.label}
@@ -71,8 +74,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Sparkles className="mr-2 h-4 w-4"/>
                 Upgrade to Pro
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full text-gray-500 hover:text-gray-900">
-                <Sun className="h-5 w-5" />
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+                {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -105,7 +113,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </DropdownMenu>
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-4 bg-gray-50/50">
+      <main className="flex flex-1 flex-col gap-4 bg-gray-50/50 dark:bg-background">
         {children}
       </main>
     </div>
