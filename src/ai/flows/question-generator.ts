@@ -38,13 +38,14 @@ export async function generateInterviewQuestions(
 
 const prompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
-  input: {schema: GenerateInterviewQuestionsInputSchema},
+  input: {schema: z.object({
+    resume: z.string(),
+    jobRole: z.string(),
+    isAptitude: z.boolean().optional(),
+    isGroupDiscussion: z.boolean().optional(),
+    isHr: z.boolean().optional(),
+  })},
   output: {schema: GenerateInterviewQuestionsOutputSchema},
-  config: {
-    helpers: {
-      eq: (a: any, b: any) => a === b,
-    },
-  },
   prompt: `You are an expert interview question generator.
 
   Your task is to generate a list of relevant interview questions based on the user's resume, their target job role, and the specific interview round they are preparing for.
@@ -55,16 +56,14 @@ const prompt = ai.definePrompt({
   Job Role:
   {{{jobRole}}}
 
-  Interview Round: {{{interviewRound}}}
-
   Instructions based on the interview round:
-  {{#if (eq interviewRound "aptitude")}}
+  {{#if isAptitude}}
   Generate 10 aptitude questions. These should test logical reasoning, quantitative aptitude, and problem-solving skills. They should be relevant to the job role but not require technical coding.
   {{/if}}
-  {{#if (eq interviewRound "group-discussion")}}
+  {{#if isGroupDiscussion}}
   Generate 1 discussion topic. This should be a thought-provoking statement or question related to technology, workplace dynamics, or society that the candidate can discuss. Example topics include "Is AI a Threat or Opportunity?" or "Remote Work vs Onsite Work". Frame it as the topic for the group discussion.
   {{/if}}
-  {{#if (eq interviewRound "hr")}}
+  {{#if isHr}}
   Generate 7 HR round questions. These should assess personality, behavior, situational responses, and cultural fit. Use the candidate's resume to ask at least one specific question about their past experiences or projects.
   {{/if}}
 
@@ -77,8 +76,15 @@ const generateInterviewQuestionsFlow = ai.defineFlow(
     inputSchema: GenerateInterviewQuestionsInputSchema,
     outputSchema: GenerateInterviewQuestionsOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const promptInput = {
+        resume: input.resume,
+        jobRole: input.jobRole,
+        isAptitude: input.interviewRound === 'aptitude',
+        isGroupDiscussion: input.interviewRound === 'group-discussion',
+        isHr: input.interviewRound === 'hr',
+    };
+    const {output} = await prompt(promptInput);
     return output!;
   }
 );
