@@ -24,7 +24,7 @@ export default function SignupPage() {
       <header className="flex justify-between items-center p-4 border-b">
         <div className="flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-purple-600" />
-            <h1 className="text-xl font-bold text-gray-800">Nexvo.ai</h1>
+            <h1 className="text-xl font-bold text-gray-800">Career Compass</h1>
         </div>
         <Button variant="ghost" size="icon">
             <Sun className="h-5 w-5" />

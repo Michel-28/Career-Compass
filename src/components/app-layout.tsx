@@ -13,7 +13,8 @@ import {
   Sparkles,
   BarChart2,
   BookUser,
-  Crown
+  Crown,
+  GraduationCap
 } from "lucide-react";
 
 import {
@@ -28,15 +29,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Icons } from "@/components/icons";
 
-const NexvoLogo = () => (
-    <svg width="110" height="28" viewBox="0 0 110 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <text x="0" y="20" fontFamily="Arial, sans-serif" fontSize="24" fill="#312E81" fontWeight="bold">NEXVO</text>
-        <circle cx="80" cy="14" r="6" fill="#6366F1"/>
-        <circle cx="80" cy="14" r="2" fill="white"/>
-        <path d="M77 11L76 10" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M83 11L84 10" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round"/>
-        <text x="88" y="20" fontFamily="Arial, sans-serif" fontSize="24" fill="#312E81" fontWeight="bold">.ai</text>
-    </svg>
+const CareerCompassLogo = () => (
+    <div className="flex items-center gap-2">
+        <GraduationCap className="h-6 w-6 text-indigo-600" />
+        <span className="text-xl font-bold text-indigo-900">Career Compass</span>
+    </div>
 )
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +51,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen w-full flex-col bg-white">
       <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 z-50">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <NexvoLogo />
+          <CareerCompassLogo />
         </Link>
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 ml-10">
           {navLinks.map((link) => (
