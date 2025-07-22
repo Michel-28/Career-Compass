@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -36,7 +37,6 @@ const prompt = ai.definePrompt({
   name: 'answerEvaluatorPrompt',
   input: {schema: EvaluateAnswerInputSchema},
   output: {schema: EvaluateAnswerOutputSchema},
-  model: 'googleai/gemini-pro',
   prompt: `You are an expert interview evaluator providing feedback to candidates.
 
   Evaluate the candidate's answer to the interview question based on their communication skills, technical skills, and confidence level.
