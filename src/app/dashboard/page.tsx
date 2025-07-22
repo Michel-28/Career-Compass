@@ -1,16 +1,30 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, FileText } from "lucide-react";
 
-const pastInterviews = [
-  { id: "1", jobRole: "Frontend Developer", date: "2023-10-26", overallScore: 7.5 },
-  { id: "2", jobRole: "UX Designer", date: "2023-10-20", overallScore: 8.2 },
-  { id: "3", jobRole: "Backend Engineer", date: "2023-10-15", overallScore: 6.8 },
-];
+type PastInterview = {
+  id: string;
+  jobRole: string;
+  date: string;
+  overallScore: number;
+};
 
 export default function DashboardPage() {
+  const [pastInterviews, setPastInterviews] = useState<PastInterview[]>([]);
+
+  useEffect(() => {
+    const storedInterviews = localStorage.getItem("past_interviews");
+    if (storedInterviews) {
+      setPastInterviews(JSON.parse(storedInterviews));
+    }
+  }, []);
+
   return (
     <AppLayout>
       <main className="flex-1 p-4 md:p-8">

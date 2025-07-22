@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
@@ -44,16 +45,32 @@ export default function InterviewResultsPage() {
   
   const [results, setResults] = useState<ResultsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, startTransition] = useTransition();
 
   useEffect(() => {
     const dataStr = localStorage.getItem(`interview_${interviewId}`);
     if (!dataStr) {
+      // If there is no specific interview data, maybe we can still show the results if they were saved.
+      const pastInterviewsStr = localStorage.getItem("past_interviews");
+      if(pastInterviewsStr) {
+        const pastInterviews = JSON.parse(pastInterviewsStr);
+        const currentInterviewResults = pastInterviews.find((i: any) => i.id === interviewId);
+        if(currentInterviewResults && currentInterviewResults.results) {
+           setResults(currentInterviewResults.results);
+           setIsLoading(false);
+           return;
+        }
+      }
       router.push('/dashboard');
       return;
     }
     
     const data: InterviewData = JSON.parse(dataStr);
+
+    // If there are no evaluations, don't try to process results
+    if (data.evaluations.length === 0) {
+        router.push('/dashboard');
+        return;
+    }
 
     const processResults = async () => {
       setIsLoading(true);
@@ -66,9 +83,9 @@ export default function InterviewResultsPage() {
       }, { communication: 0, technical: 0, confidence: 0 });
 
       const numEvals = data.evaluations.length;
-      avgScores.communication /= numEvals;
-      avgScores.technical /= numEvals;
-      avgScores.confidence /= numEvals;
+      avgScores.communication = parseFloat((avgScores.communication / numEvals).toFixed(1));
+      avgScores.technical = parseFloat((avgScores.technical / numEvals).toFixed(1));
+      avgScores.confidence = parseFloat((avgScores.confidence / numEvals).toFixed(1));
 
       const combinedFeedback = data.evaluations.map(e => e.feedback).join('\n\n');
 
@@ -87,21 +104,41 @@ export default function InterviewResultsPage() {
 
       const qna = data.questions.map((q, i) => ({
         question: q,
-        answer: data.answers[i],
-        feedback: data.evaluations[i].feedback,
+        answer: data.answers[i] || "No answer provided.",
+        feedback: data.evaluations[i]?.feedback || "No feedback available.",
       }));
 
-      setResults({
+      const processedResults: ResultsData = {
         jobRole: data.jobRole,
         scores: [
-          { name: "Communication", value: parseFloat(avgScores.communication.toFixed(1)), fill: "var(--color-Communication)" },
-          { name: "Technical", value: parseFloat(avgScores.technical.toFixed(1)), fill: "var(--color-Technical)" },
-          { name: "Confidence", value: parseFloat(avgScores.confidence.toFixed(1)), fill: "var(--color-Confidence)" },
+          { name: "Communication", value: avgScores.communication, fill: "var(--color-Communication)" },
+          { name: "Technical", value: avgScores.technical, fill: "var(--color-Technical)" },
+          { name: "Confidence", value: avgScores.confidence, fill: "var(--color-Confidence)" },
         ],
         feedback: improvementSuggestions.improvementSuggestions,
         learningPlan: learningPlan.learningPlan,
         qna,
-      });
+      };
+
+      setResults(processedResults);
+
+      // Save to past_interviews
+      const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
+      const newInterviewSummary = {
+        id: interviewId,
+        jobRole: data.jobRole,
+        date: new Date().toISOString(),
+        overallScore: parseFloat(overallScore.toFixed(1)),
+        results: processedResults, // Save full results
+      };
+      
+      const pastInterviewsStr = localStorage.getItem('past_interviews');
+      const pastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
+      const updatedPastInterviews = [...pastInterviews, newInterviewSummary];
+      localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
+      
+      // Clean up the temporary interview data
+      localStorage.removeItem(`interview_${interviewId}`);
 
       setIsLoading(false);
     };
