@@ -10,6 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const GenerateInterviewQuestionsInputSchema = z.object({
@@ -38,6 +39,7 @@ export async function generateInterviewQuestions(
 
 const prompt = ai.definePrompt({
   name: 'generateInterviewQuestionsPrompt',
+  model: 'googleai/gemini-pro',
   input: {schema: z.object({
     resume: z.string(),
     jobRole: z.string(),
@@ -88,3 +90,4 @@ const generateInterviewQuestionsFlow = ai.defineFlow(
     return output!;
   }
 );
+
