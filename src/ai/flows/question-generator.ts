@@ -52,13 +52,13 @@ const prompt = ai.definePrompt({
   Interview Round: {{{interviewRound}}}
 
   Instructions based on the interview round:
-  {{#if (eq interviewRound 'aptitude')}}
+  {{#if (eq interviewRound "aptitude")}}
   Generate 10 aptitude questions. These should test logical reasoning, quantitative aptitude, and problem-solving skills. They should be relevant to the job role but not require technical coding.
   {{/if}}
-  {{#if (eq interviewRound 'group-discussion')}}
+  {{#if (eq interviewRound "group-discussion")}}
   Generate 1 discussion topic. This should be a thought-provoking statement or question related to technology, workplace dynamics, or society that the candidate can discuss. Example topics include "Is AI a Threat or Opportunity?" or "Remote Work vs Onsite Work". Frame it as the topic for the group discussion.
   {{/if}}
-  {{#if (eq interviewRound 'hr')}}
+  {{#if (eq interviewRound "hr")}}
   Generate 7 HR round questions. These should assess personality, behavior, situational responses, and cultural fit. Use the candidate's resume to ask at least one specific question about their past experiences or projects.
   {{/if}}
 
