@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
@@ -203,7 +204,7 @@ export default function InterviewPage() {
         <Card className="w-full max-w-4xl animate-in fade-in-50 duration-500 grid md:grid-cols-2">
           <div className="p-6 flex flex-col items-center justify-center bg-muted/50 rounded-l-lg">
              <Avatar className="w-48 h-48 mb-4 border-4 border-primary/20 shadow-lg">
-              <AvatarImage src="https://placehold.co/200x200.png" alt="AI Interviewer" data-ai-hint="professional woman" />
+              <AvatarImage src="https://placehold.co/256x256/E2E8F0/475569.png" alt="AI Interviewer" data-ai-hint="professional woman" />
               <AvatarFallback>AI</AvatarFallback>
             </Avatar>
              <div className="mt-6 p-4 text-center bg-muted rounded-lg w-full flex items-center gap-4">
