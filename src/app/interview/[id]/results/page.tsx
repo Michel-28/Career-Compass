@@ -52,21 +52,22 @@ export default function InterviewResultsPage() {
       const pastInterviewsStr = localStorage.getItem("past_interviews");
       if(pastInterviewsStr) {
         const pastInterviews = JSON.parse(pastInterviewsStr);
-        const currentInterviewResults = pastInterviews.find((i: any) => i.id === interviewId);
-        if(currentInterviewResults && currentInterviewResults.results) {
-           setResults(currentInterviewResults.results);
+        const currentInterview = pastInterviews.find((i: any) => i.id === interviewId);
+        if(currentInterview && currentInterview.results) {
+           setResults(currentInterview.results);
            setIsLoading(false);
-           // Clean up temp data if it still exists
+           // Clean up temp data if it still exists to prevent re-processing
            if(localStorage.getItem(`interview_${interviewId}`)) {
               localStorage.removeItem(`interview_${interviewId}`);
            }
-           return;
+           return; // <- IMPORTANT: Exit here if results are found.
         }
       }
 
       // If not found in past_interviews, process the temporary data
       const dataStr = localStorage.getItem(`interview_${interviewId}`);
       if (!dataStr) {
+        // If no temp data, maybe it was processed but we landed here again. Redirect.
         router.push('/dashboard');
         return;
       }
@@ -129,9 +130,10 @@ export default function InterviewResultsPage() {
       setResults(processedResults);
 
       // Save to past_interviews
-      const existingPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
+      let existingPastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
       const interviewExists = existingPastInterviews.some((interview: any) => interview.id === interviewId);
 
+      // This check is the final safeguard.
       if (!interviewExists) {
         const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
         const newInterviewSummary = {
@@ -145,6 +147,7 @@ export default function InterviewResultsPage() {
         localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
       }
       
+      // Finally, remove the temp data.
       localStorage.removeItem(`interview_${interviewId}`);
       setIsLoading(false);
     };
