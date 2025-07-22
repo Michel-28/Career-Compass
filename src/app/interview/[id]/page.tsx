@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Mic, MicOff, Send } from "lucide-react";
+import { Loader2, Mic, MicOff, Send, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { evaluateAnswer, EvaluateAnswerOutput } from "@/ai/flows/answer-evaluator";
+import { textToSpeech } from "@/ai/flows/text-to-speech";
 
 type InterviewData = {
   jobRole: string;
@@ -39,10 +40,13 @@ export default function InterviewPage() {
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [isEvaluating, startEvaluationTransition] = useTransition();
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const data = localStorage.getItem(`interview_${interviewId}`);
@@ -56,9 +60,72 @@ export default function InterviewPage() {
       });
       router.push('/interview/setup');
     }
+    
+    // Initialize the SpeechRecognition API
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+        toast({ title: "Recording started", description: "Speak now..." });
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        // Do not show toast here, it's better to show it when transcription is done.
+      };
+
+      recognition.onerror = (event) => {
+        setIsRecording(false);
+        toast({ variant: "destructive", title: "Recording Error", description: event.error });
+      };
+      
+      let finalTranscript = '';
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        setAnswer(finalTranscript + interimTranscript);
+      };
+      recognitionRef.current = recognition;
+    }
+
   }, [interviewId, router, toast]);
 
-  const handleNext = async () => {
+  const handleSpeakQuestion = async () => {
+    if (!interviewData || isSynthesizing) return;
+    
+    setIsSynthesizing(true);
+    try {
+      const questionText = interviewData.questions[currentQuestionIndex];
+      const { audioDataUri } = await textToSpeech(questionText);
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.src = audioDataUri;
+        audioPlayerRef.current.play();
+      }
+    } catch (error) {
+      console.error("Text-to-speech error:", error);
+      toast({
+        variant: "destructive",
+        title: "Could not play audio",
+        description: "There was an error generating the voice for the question.",
+      });
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+
+  const handleSubmit = async () => {
     if (!answer.trim()) {
       toast({
         variant: "destructive",
@@ -68,7 +135,7 @@ export default function InterviewPage() {
       return;
     }
     
-    startTransition(async () => {
+    startEvaluationTransition(async () => {
       if (!interviewData) return;
 
       const evaluation = await evaluateAnswer({
@@ -80,8 +147,8 @@ export default function InterviewPage() {
 
       const updatedData: InterviewData = {
         ...interviewData,
-        answers: [...interviewData.answers, answer],
-        evaluations: [...interviewData.evaluations, evaluation],
+        answers: [...(interviewData.answers || []), answer],
+        evaluations: [...(interviewData.evaluations || []), evaluation],
       };
       
       localStorage.setItem(`interview_${interviewId}`, JSON.stringify(updatedData));
@@ -103,54 +170,19 @@ export default function InterviewPage() {
   };
 
   const toggleRecording = () => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-    } else {
-      startRecording();
-    }
-  };
-
-  const startRecording = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({
+    if (!recognitionRef.current) {
+       toast({
         variant: "destructive",
         title: "Browser not supported",
         description: "Your browser does not support speech recognition.",
       });
       return;
     }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onstart = () => {
-      setIsRecording(true);
-      toast({ title: "Recording started", description: "Speak now..." });
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-      toast({ title: "Recording stopped" });
-    };
-
-    recognition.onerror = (event) => {
-      toast({ variant: "destructive", title: "Recording Error", description: event.error });
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0])
-        .map(result => result.transcript)
-        .join('');
-      setAnswer(transcript);
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
+    if (isRecording) {
+      recognitionRef.current?.stop();
+    } else {
+      recognitionRef.current?.start();
+    }
   };
 
   if (!interviewData) {
@@ -165,6 +197,7 @@ export default function InterviewPage() {
 
   const progress = ((currentQuestionIndex) / interviewData.questions.length) * 100;
   const isLastQuestion = currentQuestionIndex === interviewData.questions.length - 1;
+  const isPending = isEvaluating || isTranscribing || isSynthesizing;
 
   return (
     <AppLayout>
@@ -195,8 +228,12 @@ export default function InterviewPage() {
             <Progress value={progress} className="mt-4" />
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="p-6 bg-muted rounded-lg min-h-[100px] flex items-center">
-              <p className="text-lg font-semibold">{interviewData.questions[currentQuestionIndex]}</p>
+            <div className="p-6 bg-muted rounded-lg min-h-[100px] flex items-center justify-between gap-4">
+              <p className="text-lg font-semibold flex-1">{interviewData.questions[currentQuestionIndex]}</p>
+              <Button size="icon" variant="ghost" onClick={handleSpeakQuestion} disabled={isSynthesizing}>
+                 {isSynthesizing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
+                 <span className="sr-only">Read question aloud</span>
+              </Button>
             </div>
             <div className="space-y-4">
               <Textarea
@@ -207,23 +244,24 @@ export default function InterviewPage() {
                 disabled={isPending}
               />
               <div className="flex justify-between items-center">
-                <Button type="button" variant="outline" onClick={toggleRecording} disabled={isPending}>
+                <Button type="button" variant="outline" onClick={toggleRecording} disabled={isPending || isEvaluating}>
                   {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
                   {isRecording ? "Stop Recording" : "Record Answer"}
                 </Button>
-                <Button onClick={handleNext} disabled={isPending}>
-                  {isPending ? (
+                <Button onClick={handleSubmit} disabled={isPending || !answer}>
+                  {isEvaluating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  {isPending ? "Evaluating..." : (isLastQuestion ? "Finish & View Results" : "Submit & Next Question")}
+                  {isEvaluating ? "Evaluating..." : (isLastQuestion ? "Finish & View Results" : "Submit & Next Question")}
                 </Button>
               </div>
             </div>
           </CardContent>
         </Card>
       </main>
+      <audio ref={audioPlayerRef} className="hidden" />
     </AppLayout>
   );
 }
