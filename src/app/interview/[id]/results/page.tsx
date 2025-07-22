@@ -48,36 +48,40 @@ export default function InterviewResultsPage() {
 
   useEffect(() => {
     const processResults = async () => {
+      // Step 1: Check if results are already processed and stored.
       const pastInterviewsStr = localStorage.getItem("past_interviews");
       let pastInterviews = pastInterviewsStr ? JSON.parse(pastInterviewsStr) : [];
-      
       const existingInterview = pastInterviews.find((i: any) => i.id === interviewId);
 
       if (existingInterview?.results) {
+        // If results exist, display them and stop.
         setResults(existingInterview.results);
         setIsLoading(false);
-        // Clean up temporary data if it somehow still exists
+        // Clean up temporary data if it somehow still exists.
         if (localStorage.getItem(`interview_${interviewId}`)) {
           localStorage.removeItem(`interview_${interviewId}`);
         }
-        return; // <- Exit early, results already exist.
+        return; // <-- CRITICAL: Exit early to prevent re-processing.
       }
       
+      // Step 2: If no stored results, process the temporary interview data.
       const dataStr = localStorage.getItem(`interview_${interviewId}`);
       if (!dataStr) {
+        // If there's no temporary data either, something is wrong. Go to dashboard.
         router.push('/dashboard');
         return;
       }
       
-      setIsLoading(true);
       const data: InterviewData = JSON.parse(dataStr);
 
-      if (data.evaluations.length === 0) {
+      // Handle cases with no evaluations (e.g., user ended early).
+      if (!data.evaluations || data.evaluations.length === 0) {
         localStorage.removeItem(`interview_${interviewId}`);
         router.push('/dashboard');
         return;
       }
 
+      // Step 3: Generate new results with AI (only runs once).
       const avgScores = data.evaluations.reduce((acc, curr) => {
         acc.communication += curr.communication;
         acc.technical += curr.technical;
@@ -125,6 +129,7 @@ export default function InterviewResultsPage() {
 
       setResults(processedResults);
 
+      // Step 4: Save the newly generated results to the persistent list.
       const overallScore = (avgScores.communication + avgScores.technical + avgScores.confidence) / 3;
       const newInterviewSummary = {
         id: interviewId,
@@ -134,9 +139,12 @@ export default function InterviewResultsPage() {
         results: processedResults,
       };
       
-      pastInterviews.push(newInterviewSummary);
-      localStorage.setItem('past_interviews', JSON.stringify(pastInterviews));
+      // Update the list of past interviews, ensuring no duplicates.
+      const updatedPastInterviews = pastInterviews.filter((i: any) => i.id !== interviewId);
+      updatedPastInterviews.push(newInterviewSummary);
+      localStorage.setItem('past_interviews', JSON.stringify(updatedPastInterviews));
       
+      // Step 5: Clean up the temporary data now that it's been processed.
       localStorage.removeItem(`interview_${interviewId}`);
       setIsLoading(false);
     };
@@ -239,3 +247,5 @@ export default function InterviewResultsPage() {
     </AppLayout>
   );
 }
+
+    
