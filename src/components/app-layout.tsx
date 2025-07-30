@@ -50,7 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/analytics", label: "Analytics", icon: BarChart2 },
+    { href: "/interview-analysis", label: "Analytics", icon: BarChart2 },
     { href: "/profile", label: "Profile", icon: User },
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/subscriptions", label: "Subscriptions", icon: Crown },
@@ -66,7 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {navLinks.map((link) => (
             <Link
               key={link.href}
-              href="#" // Changed to # as these pages don't exist
+              href={link.href}
               className={`transition-colors hover:text-gray-900 dark:hover:text-gray-50 ${
                 pathname === link.href ? "text-gray-900 dark:text-gray-50 font-semibold" : "text-gray-500 dark:text-gray-400"
               }`}

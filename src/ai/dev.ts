@@ -6,3 +6,6 @@ import '@/ai/flows/question-generator.ts';
 import '@/ai/flows/personalized-learning-plan.ts';
 import '@/ai/flows/answer-evaluator.ts';
 import '@/ai/flows/generate-audio.ts';
+import '@/ai/flows/interview-analysis/analyze-body-language.ts';
+import '@/ai/flows/interview-analysis/transcribe-audio.ts';
+import '@/ai/flows/interview-analysis/analyze-speech.ts';
