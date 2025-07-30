@@ -53,7 +53,7 @@ const prompt = ai.definePrompt({
   - confidence: (number) Score for confidence level (0-10).
   - feedback: (string) Detailed feedback on the answer, including areas for improvement.
   `,
-  model: 'gemini-pro',
+  model: 'googleai/gemini-pro',
 });
 
 const evaluateAnswerFlow = ai.defineFlow(

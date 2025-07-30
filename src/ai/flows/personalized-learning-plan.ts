@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
   Feedback: {{{feedback}}}
 
   Learning Plan:`,
-  model: 'gemini-pro',
+  model: 'googleai/gemini-pro',
 });
 
 const personalizedLearningPlanFlow = ai.defineFlow(
