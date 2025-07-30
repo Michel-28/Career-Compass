@@ -1,7 +1,8 @@
+
 'use server';
 
 /**
- * @fileOverview A flow to transcribe audio files into text.
+ * @fileOverview A flow to transcribe audio files into text using AssemblyAI.
  *
  * - transcribeAudio - A function that handles the audio transcription process.
  * - TranscribeAudioInput - The input type for the transcribeAudio function.
@@ -10,6 +11,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import axios from 'axios';
+import { config } from '@/lib/config';
 
 const TranscribeAudioInputSchema = z.object({
   audioDataUri: z
@@ -26,25 +29,65 @@ const TranscribeAudioOutputSchema = z.object({
 export type TranscribeAudioOutput = z.infer<typeof TranscribeAudioOutputSchema>;
 
 export async function transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
-  return transcribeAudioFlow(input);
+  return transcribeAudioWithAssemblyAI(input);
 }
 
-const transcribeAudioPrompt = ai.definePrompt({
-  name: 'transcribeAudioPrompt',
-  input: {schema: TranscribeAudioInputSchema},
-  output: {schema: TranscribeAudioOutputSchema},
-  prompt: `Transcribe the following audio into text.\n\nAudio: {{media url=audioDataUri}}`,
-  model: 'googleai/gemini-1.5-flash-latest',
-});
 
-const transcribeAudioFlow = ai.defineFlow(
-  {
-    name: 'transcribeAudioFlow',
-    inputSchema: TranscribeAudioInputSchema,
-    outputSchema: TranscribeAudioOutputSchema,
-  },
-  async input => {
-    const {output} = await transcribeAudioPrompt(input);
-    return output!;
+async function transcribeAudioWithAssemblyAI(
+  input: TranscribeAudioInput
+): Promise<TranscribeAudioOutput> {
+  if (!config.assemblyAiApiKey) {
+    throw new Error('AssemblyAI API key is not configured.');
   }
-);
+
+  try {
+    // 1. Upload the audio file
+    const uploadResponse = await axios.post(
+      'https://api.assemblyai.com/v2/upload',
+      Buffer.from(input.audioDataUri.split(',')[1], 'base64'),
+      {
+        headers: {
+          'authorization': config.assemblyAiApiKey,
+          'Content-Type': 'application/octet-stream',
+        },
+      }
+    );
+
+    const audio_url = uploadResponse.data.upload_url;
+
+    // 2. Submit the transcription job
+    const transcriptResponse = await axios.post(
+      'https://api.assemblyai.com/v2/transcript',
+      { audio_url },
+      { headers: { authorization: config.assemblyAiApiKey } }
+    );
+
+    const transcriptId = transcriptResponse.data.id;
+
+    // 3. Poll for the transcription result
+    while (true) {
+      const pollResponse = await axios.get(
+        `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+        { headers: { authorization: config.assemblyAiApiKey } }
+      );
+      const transcriptData = pollResponse.data;
+
+      if (transcriptData.status === 'failed') {
+        throw new Error(`Transcription failed: ${transcriptData.error}`);
+      }
+      
+      if (transcriptData.status === 'completed') {
+        return { transcription: transcriptData.text || '' };
+      }
+      
+      // Wait for 2 seconds before polling again
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  } catch (error) {
+    console.error('Error with AssemblyAI transcription:', error);
+    if (axios.isAxiosError(error)) {
+        throw new Error(`AssemblyAI API error: ${error.response?.data?.error || error.message}`);
+    }
+    throw new Error('Failed to transcribe audio with AssemblyAI.');
+  }
+}
