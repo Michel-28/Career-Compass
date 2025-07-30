@@ -1,3 +1,4 @@
+'use server';
 import { config } from 'dotenv';
 config();
 
@@ -10,3 +11,5 @@ import '@/ai/flows/interview-analysis/analyze-body-language.ts';
 import '@/ai/flows/interview-analysis/transcribe-audio.ts';
 import '@/ai/flows/interview-analysis/analyze-speech.ts';
 import '@/ai/flows/technical-interview-flow.ts';
+import '@/ai/flows/grade-speech.ts';
+import '@/ai/flows/vocabulary-builder.ts';
