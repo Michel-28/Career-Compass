@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Chatbot } from "./chatbot/chatbot";
 
 const CareerCompassLogo = () => (
     <div className="flex items-center gap-2">
@@ -77,6 +78,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       return regexPaths.some(rp => rp.test(pathname));
     }
     return false;
+  }
+  
+  const getCurrentSection = () => {
+    const activeLink = navLinks.find(link => isActive(link.href, link.activePaths));
+    return activeLink ? activeLink.label : 'General';
   }
 
   const NavContent = () => (
@@ -179,6 +185,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background overflow-auto">
             {children}
           </main>
+          <Chatbot section={getCurrentSection()} />
       </div>
     </div>
   );

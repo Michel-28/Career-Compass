@@ -14,3 +14,4 @@ import '@/ai/flows/technical-interview-flow.ts';
 import '@/ai/flows/grade-speech.ts';
 import '@/ai/flows/vocabulary-builder.ts';
 import '@/ai/flows/resume-analyzer.ts';
+import '@/ai/flows/chatbot-flow.ts';
