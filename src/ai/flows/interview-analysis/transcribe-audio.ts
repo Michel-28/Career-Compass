@@ -8,7 +8,7 @@
  * - TranscribeAudioOutput - The return type for the transcribeAudio function.
  */
 
-import {ai, geminiPro} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const TranscribeAudioInputSchema = z.object({
@@ -34,7 +34,7 @@ const transcribeAudioPrompt = ai.definePrompt({
   input: {schema: TranscribeAudioInputSchema},
   output: {schema: TranscribeAudioOutputSchema},
   prompt: `Transcribe the following audio into text.\n\nAudio: {{media url=audioDataUri}}`,
-  model: geminiPro,
+  model: 'googleai/gemini-pro',
 });
 
 const transcribeAudioFlow = ai.defineFlow(

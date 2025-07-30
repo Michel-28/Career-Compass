@@ -8,7 +8,7 @@
  * - PersonalizedLearningPlanOutput - The return type for the generatePersonalizedLearningPlan function.
  */
 
-import {ai, geminiPro} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PersonalizedLearningPlanInputSchema = z.object({
@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
   Feedback: {{{feedback}}}
 
   Learning Plan:`,
-  model: geminiPro,
+  model: 'googleai/gemini-pro',
 });
 
 const personalizedLearningPlanFlow = ai.defineFlow(

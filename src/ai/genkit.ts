@@ -9,5 +9,3 @@ export const ai = genkit({
     }),
   ],
 });
-
-export const geminiPro = googleAI.model('gemini-pro');

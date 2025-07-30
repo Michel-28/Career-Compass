@@ -8,7 +8,7 @@
  * - AnalyzeSpeechOutput - The return type for the analyzeSpeech function.
  */
 
-import {ai, geminiPro} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AnalyzeSpeechInputSchema = z.object({
@@ -55,7 +55,7 @@ Transcription:
 
 Based on your analysis, provide a score (0-100) for clarity, a count of filler words, the overall sentiment, and the pace in words per minute. Be succinct and professional in your feedback.
 `,
-  model: geminiPro,
+  model: 'googleai/gemini-pro',
 });
 
 const analyzeSpeechFlow = ai.defineFlow(

@@ -7,7 +7,7 @@
  * - GenerateInterviewQuestionsOutput - The return type for the generateInterviewQuestions function.
  */
 
-import {ai, geminiPro} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateInterviewQuestionsInputSchema = z.object({
@@ -66,7 +66,7 @@ const prompt = ai.definePrompt({
   {{/if}}
 
   Questions:`,
-  model: geminiPro,
+  model: 'googleai/gemini-pro',
 });
 
 const generateInterviewQuestionsFlow = ai.defineFlow(
