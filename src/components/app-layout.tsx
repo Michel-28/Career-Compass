@@ -24,7 +24,8 @@ import {
   Menu,
   MessageSquare,
   ClipboardList,
-  UserCheck
+  UserCheck,
+  FileText
 } from "lucide-react";
 
 import {
@@ -61,6 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/interview/setup", label: "Aptitude/HR", icon: ClipboardList, activePaths: ["/interview/setup", "/interview/[id]", "/interview/[id]/results"] },
     { href: "/interview-analysis", label: "Intro Analyzer", icon: UserCheck },
+    { href: "/resume-analyzer", label: "Resume Analyzer", icon: FileText },
     { href: "/interview/technical/setup", label: "Mock Tech Interview", icon: BrainCircuit, activePaths: ["/interview/technical/setup", "/interview/technical/[id]"] },
     { href: "/language-coach", label: "Language Coach", icon: Languages },
     { href: "/peer-practice", label: "Peer Practice", icon: Users },
@@ -119,14 +121,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle navigation menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col">
+              <SheetContent side="left" className="flex flex-col p-0">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                  <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 mb-4">
                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                       <CareerCompassLogo />
                    </Link>
                  </div>
-                <NavContent />
+                <div className="px-4">
+                  <NavContent />
+                </div>
               </SheetContent>
             </Sheet>
 
