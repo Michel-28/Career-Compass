@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -25,7 +24,8 @@ import {
   MessageSquare,
   ClipboardList,
   UserCheck,
-  FileText
+  FileText,
+  Library
 } from "lucide-react";
 
 import {
@@ -69,6 +69,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/peer-practice", label: "Peer Practice", icon: Users },
     { href: "/company-simulator", label: "Company Simulator", icon: Building2 },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+    { href: "/resources", label: "Resources", icon: Library },
   ];
 
   const isActive = (href: string, activePaths?: string[]) => {
