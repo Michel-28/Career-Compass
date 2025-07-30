@@ -58,7 +58,7 @@ Video: {{media url=videoDataUri}}
 
 Based on your analysis, provide a score (0-100) for eye contact, a ratio (0-1) for smile ratio, a description of gesture usage, and an analysis of posture. Be succinct and professional in your feedback.
 `,
-  model: 'googleai/gemini-pro',
+  model: 'gemini-pro',
 });
 
 const analyzeBodyLanguageFlow = ai.defineFlow(
