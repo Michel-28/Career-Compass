@@ -9,3 +9,4 @@ import '@/ai/flows/generate-audio.ts';
 import '@/ai/flows/interview-analysis/analyze-body-language.ts';
 import '@/ai/flows/interview-analysis/transcribe-audio.ts';
 import '@/ai/flows/interview-analysis/analyze-speech.ts';
+import '@/ai/flows/technical-interview-flow.ts';

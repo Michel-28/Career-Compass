@@ -14,7 +14,17 @@ import {
   BarChart2,
   Crown,
   GraduationCap,
-  Moon
+  Moon,
+  BrainCircuit,
+  Languages,
+  Users,
+  Building2,
+  Trophy,
+  LayoutDashboard,
+  Menu,
+  MessageSquare,
+  ClipboardList,
+  UserCheck
 } from "lucide-react";
 
 import {
@@ -28,6 +38,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const CareerCompassLogo = () => (
     <div className="flex items-center gap-2">
@@ -40,44 +51,89 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const navLinks = [
-    { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/interview-analysis", label: "Analytics", icon: BarChart2 },
-    { href: "/profile", label: "Profile", icon: User },
-    { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/subscriptions", label: "Subscriptions", icon: Crown },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/interview/setup", label: "Aptitude/HR", icon: ClipboardList, activePaths: ["/interview/setup", "/interview/[id]", "/interview/[id]/results"] },
+    { href: "/interview-analysis", label: "Intro Analyzer", icon: UserCheck },
+    { href: "/interview/technical/setup", label: "Mock Tech Interview", icon: BrainCircuit, activePaths: ["/interview/technical/setup", "/interview/technical/[id]"] },
+    { href: "/language-coach", label: "Language Coach", icon: Languages },
+    { href: "/peer-practice", label: "Peer Practice", icon: Users },
+    { href: "/company-simulator", label: "Company Simulator", icon: Building2 },
+    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   ];
 
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 z-50">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <CareerCompassLogo />
+  const isActive = (href: string, activePaths?: string[]) => {
+    if (pathname === href) return true;
+    if (activePaths) {
+      const regexPaths = activePaths.map(p => new RegExp(`^${p.replace(/\[.*?\]/g, '[^/]+')}$`));
+      return regexPaths.some(rp => rp.test(pathname));
+    }
+    return false;
+  }
+
+  const NavContent = () => (
+    <nav className="flex flex-col gap-4 text-lg font-medium">
+      {navLinks.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+            isActive(link.href, link.activePaths) ? "bg-muted text-primary font-semibold" : ""
+          }`}
+        >
+          <link.icon className="h-4 w-4" />
+          {link.label}
         </Link>
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 ml-10">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`transition-colors hover:text-foreground ${
-                pathname === link.href ? "text-foreground font-semibold" : "text-muted-foreground"
-              }`}
-            >
-              {link.label}
+      ))}
+    </nav>
+  );
+
+
+  return (
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+       <div className="hidden border-r bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+              <CareerCompassLogo />
             </Link>
-          ))}
-        </nav>
-        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
-            <Button className="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 font-semibold">
-                <Sparkles className="mr-2 h-4 w-4"/>
-                Upgrade to Pro
-            </Button>
-            <Button
+          </div>
+          <div className="flex-1">
+            <NavContent />
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col">
+          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col">
+                 <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 mb-4">
+                   <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                      <CareerCompassLogo />
+                   </Link>
+                 </div>
+                <NavContent />
+              </SheetContent>
+            </Sheet>
+
+            <div className="w-full flex-1">
+              {/* Future: Add a global search bar here maybe */}
+            </div>
+            
+             <Button
                 variant="ghost"
                 size="icon"
                 className="rounded-full"
@@ -85,40 +141,40 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             >
                 {mounted && (theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />)}
             </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                     <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40" alt="User" data-ai-hint="user avatar" />
-                        <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-               <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <Link href="/login">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" size="icon" className="rounded-full">
+                       <Avatar className="h-8 w-8">
+                          <AvatarImage src="https://placehold.co/40x40" alt="User" data-ai-hint="user avatar" />
+                          <AvatarFallback>U</AvatarFallback>
+                      </Avatar>
+                  </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
                 </DropdownMenuItem>
-              </Link>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-      <main className="flex flex-1 flex-col gap-4 bg-muted/40">
-        {children}
-      </main>
+                 <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <Link href="/login">
+                  <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background overflow-auto">
+            {children}
+          </main>
+      </div>
     </div>
   );
 }
