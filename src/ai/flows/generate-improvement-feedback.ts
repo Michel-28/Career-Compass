@@ -8,7 +8,7 @@
  * - GenerateImprovementFeedbackOutput - The return type for the generateImprovementFeedback function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateImprovementFeedbackInputSchema = z.object({
@@ -50,6 +50,7 @@ const prompt = ai.definePrompt({
   Focus on areas where the candidate can realistically make improvements. Suggest areas to study and resources that might be helpful.
   Your response should only include the improvement suggestions, formatted as a single, flowing paragraph. Do not use markdown, lists, or bold text.
   `,
+  model: geminiPro,
 });
 
 const generateImprovementFeedbackFlow = ai.defineFlow(

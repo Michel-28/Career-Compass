@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -9,8 +8,7 @@
  * - EvaluateAnswerOutput - The return type for the evaluateAnswer function.
  */
 
-import {ai} from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const EvaluateAnswerInputSchema = z.object({
@@ -55,6 +53,7 @@ const prompt = ai.definePrompt({
   - confidence: (number) Score for confidence level (0-10).
   - feedback: (string) Detailed feedback on the answer, including areas for improvement.
   `,
+  model: geminiPro,
 });
 
 const evaluateAnswerFlow = ai.defineFlow(

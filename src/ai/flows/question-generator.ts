@@ -1,5 +1,3 @@
-
-// src/ai/flows/question-generator.ts
 'use server';
 /**
  * @fileOverview A flow for generating interview questions based on a resume, job role, and a selected interview round.
@@ -9,8 +7,7 @@
  * - GenerateInterviewQuestionsOutput - The return type for the generateInterviewQuestions function.
  */
 
-import {ai} from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateInterviewQuestionsInputSchema = z.object({
@@ -69,6 +66,7 @@ const prompt = ai.definePrompt({
   {{/if}}
 
   Questions:`,
+  model: geminiPro,
 });
 
 const generateInterviewQuestionsFlow = ai.defineFlow(
