@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Mic, Volume2, Video, MicOff, Loader2, Timer, VideoOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import type { RecorderStatus } from '@/hooks/use-media-recorder';
+
 
 type InterviewViewProps = {
   question: string;
@@ -14,8 +15,8 @@ type InterviewViewProps = {
   onFinish: () => void;
   isReady: boolean;
   isRecording: boolean;
-  startRecording: (stream: MediaStream) => void;
-  cleanup: () => void;
+  stream: MediaStream | null;
+  status: RecorderStatus;
 };
 
 const INTERVIEW_DURATION = 15 * 60; // 15 minutes in seconds
@@ -28,55 +29,19 @@ export default function InterviewView({
   onFinish, 
   isReady, 
   isRecording,
-  startRecording,
-  cleanup,
+  stream,
+  status
 }: InterviewViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { toast } = useToast();
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isAnswering, setIsAnswering] = useState(false);
   const [timeLeft, setTimeLeft] = useState(INTERVIEW_DURATION);
   const isLastQuestion = questionIndex === totalQuestions - 1;
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (typeof window === 'undefined' || !navigator.mediaDevices) {
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Unsupported Device',
-          description: 'Your device does not support camera access.',
-        });
-        return;
-      }
-      try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-        setHasCameraPermission(true);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-        startRecording(mediaStream); // Start recording the whole session
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
-      }
-    };
-
-    if(hasCameraPermission === null) {
-      getCameraPermission();
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
     }
-
-    // This cleanup function will be called when the component unmounts.
-    return () => {
-        cleanup();
-    }
-  }, [toast, startRecording, hasCameraPermission, cleanup]);
+  }, [stream]);
 
   useEffect(() => {
     if (!isRecording) return;
@@ -106,24 +71,19 @@ export default function InterviewView({
   
   useEffect(() => {
       setIsAnswering(false);
-      if(hasCameraPermission) {
+      if(isReady) {
           speakQuestion();
       }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [question, hasCameraPermission]);
+  }, [question, isReady]);
 
   const handleAnswerToggle = () => {
       setIsAnswering(prev => !prev);
   }
 
-  const handleEndInterview = () => {
-      cleanup();
-      onFinish();
-  }
-
   const handleNextOrFinish = () => {
       if(isLastQuestion) {
-          handleEndInterview();
+          onFinish();
       } else {
           onNext();
       }
@@ -136,7 +96,7 @@ export default function InterviewView({
   };
 
   const renderContent = () => {
-    if (hasCameraPermission === null) {
+    if (status === 'permission-requested') {
       return (
         <div className="flex flex-col items-center justify-center gap-4 text-center p-8 h-full">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -150,7 +110,7 @@ export default function InterviewView({
     return (
         <>
             <video ref={videoRef} className="w-full h-full object-cover scale-x-[-1]" autoPlay muted playsInline />
-            {hasCameraPermission === false && (
+            {status === 'error' && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80">
                     <Alert variant="destructive" className="w-auto">
                         <Video className="h-4 w-4" />
@@ -184,25 +144,25 @@ export default function InterviewView({
         <p className="text-sm font-semibold text-primary uppercase tracking-wider">Question {questionIndex + 1} of {totalQuestions}</p>
         <h2 className="text-2xl md:text-3xl font-bold mt-2 mb-6">{question}</h2>
         <div className="flex justify-center items-center gap-2 md:gap-4 flex-wrap">
-          <Button onClick={speakQuestion} variant="outline" size="lg" aria-label="Listen to question again"  disabled={!hasCameraPermission}>
+          <Button onClick={speakQuestion} variant="outline" size="lg" aria-label="Listen to question again"  disabled={!isReady}>
             <Volume2 className="h-5 w-5" />
           </Button>
 
           {isAnswering ? (
-              <Button onClick={handleAnswerToggle} size="lg" variant="secondary" disabled={!hasCameraPermission}>
+              <Button onClick={handleAnswerToggle} size="lg" variant="secondary" disabled={!isReady}>
                   <MicOff className="mr-2"/> Stop Answering
               </Button>
           ) : (
-              <Button onClick={handleAnswerToggle} size="lg" disabled={!isReady || !hasCameraPermission}>
+              <Button onClick={handleAnswerToggle} size="lg" disabled={!isReady}>
                   <Mic className="mr-2"/> Start Answering
               </Button>
           )}
 
-          <Button onClick={handleNextOrFinish} size="lg" disabled={!isReady || isAnswering || !hasCameraPermission}>
+          <Button onClick={handleNextOrFinish} size="lg" disabled={!isReady || isAnswering}>
             {isLastQuestion ? 'Finish & Analyze' : 'Next Question'}
           </Button>
 
-          <Button onClick={handleEndInterview} size="lg" variant="destructive" disabled={!isReady || !hasCameraPermission}>
+          <Button onClick={onFinish} size="lg" variant="destructive" disabled={!isReady}>
             <VideoOff className="mr-2" /> End Interview
           </Button>
         </div>

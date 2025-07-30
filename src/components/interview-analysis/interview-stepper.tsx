@@ -34,16 +34,25 @@ export default function InterviewStepper() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const { toast } = useToast();
-  const videoChunks = useRef<string[]>([]);
-
+  
   const handleChunk = (chunk: string) => {
-    videoChunks.current.push(chunk);
+    // This function can be used for real-time processing if needed in the future.
   };
 
-  const { isRecording, error: mediaError, startRecording, stopRecording, cleanup, isReady } = useMediaRecorder(handleChunk);
+  const { 
+    isRecording, 
+    error: mediaError, 
+    startRecording, 
+    stopRecording, 
+    cleanup, 
+    isReady,
+    stream,
+    status
+  } = useMediaRecorder(handleChunk);
 
-  const handleStart = () => {
-    videoChunks.current = [];
+  const handleStart = async () => {
+    // Request permissions and start recording immediately when user clicks start
+    await startRecording();
     setStep('interviewing');
   };
 
@@ -57,9 +66,6 @@ export default function InterviewStepper() {
     setStep('analyzing');
     const dataUri = await stopRecording();
     
-    // Camera is already cleaned up by InterviewView, but we call it here as a fallback.
-    cleanup();
-
     if (!dataUri) {
         toast({
             title: "Recording Failed",
@@ -90,7 +96,6 @@ export default function InterviewStepper() {
     setStep('welcome');
     setQuestionIndex(0);
     setAnalysisResult(null);
-    videoChunks.current = [];
   }, [cleanup]);
 
   const renderStep = () => {
@@ -107,8 +112,8 @@ export default function InterviewStepper() {
             onFinish={handleFinish}
             isReady={isReady}
             isRecording={isRecording}
-            startRecording={startRecording}
-            cleanup={cleanup}
+            stream={stream}
+            status={status}
           />
         );
       case 'analyzing':
