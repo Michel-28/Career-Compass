@@ -64,6 +64,23 @@ export function useMediaRecorder(onChunkAvailable?: (chunk: string) => void) {
     }
   }, [onChunkAvailable]);
 
+  const cleanup = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    if(mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+            mediaRecorderRef.current.stop();
+        } catch (e) {
+            console.error("Error stopping media recorder during cleanup", e)
+        }
+    }
+    mediaRecorderRef.current = null;
+    recordedChunksRef.current = [];
+    setStream(null);
+    setStatus('idle');
+    setError(null);
+  }, [stream]);
 
   const stopRecording = useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -103,23 +120,6 @@ export function useMediaRecorder(onChunkAvailable?: (chunk: string) => void) {
     });
   }, [status, cleanup]);
   
-  const cleanup = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-    if(mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        try {
-            mediaRecorderRef.current.stop();
-        } catch (e) {
-            console.error("Error stopping media recorder during cleanup", e)
-        }
-    }
-    mediaRecorderRef.current = null;
-    recordedChunksRef.current = [];
-    setStream(null);
-    setStatus('idle');
-    setError(null);
-  }, [stream]);
 
   return { status, isRecording, stream, error, startRecording, stopRecording, cleanup, isReady };
 }
