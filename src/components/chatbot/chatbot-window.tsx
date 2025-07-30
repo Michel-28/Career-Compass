@@ -33,7 +33,7 @@ export function ChatbotWindow({ messages, onClose, onSubmit, isLoading }: Chatbo
   };
 
   return (
-    <Card className="fixed bottom-6 left-6 w-full max-w-sm h-[70vh] flex flex-col shadow-2xl z-50 animate-in slide-in-from-bottom-10 duration-500">
+    <Card className="fixed bottom-6 right-6 w-full max-w-sm h-[70vh] flex flex-col shadow-2xl z-50 animate-in slide-in-from-bottom-10 duration-500">
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
             <div className="p-2 bg-primary/10 rounded-full">
