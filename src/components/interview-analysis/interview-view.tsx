@@ -15,6 +15,7 @@ type InterviewViewProps = {
   isReady: boolean;
   isRecording: boolean;
   startRecording: (stream: MediaStream) => void;
+  cleanup: () => void;
 };
 
 const INTERVIEW_DURATION = 15 * 60; // 15 minutes in seconds
@@ -28,6 +29,7 @@ export default function InterviewView({
   isReady, 
   isRecording,
   startRecording,
+  cleanup,
 }: InterviewViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -69,7 +71,12 @@ export default function InterviewView({
     if(hasCameraPermission === null) {
       getCameraPermission();
     }
-  }, [toast, startRecording, hasCameraPermission]);
+
+    // This cleanup function will be called when the component unmounts.
+    return () => {
+        cleanup();
+    }
+  }, [toast, startRecording, hasCameraPermission, cleanup]);
 
   useEffect(() => {
     if (!isRecording) return;
@@ -109,9 +116,14 @@ export default function InterviewView({
       setIsAnswering(prev => !prev);
   }
 
+  const handleEndInterview = () => {
+      cleanup();
+      onFinish();
+  }
+
   const handleNextOrFinish = () => {
       if(isLastQuestion) {
-          onFinish();
+          handleEndInterview();
       } else {
           onNext();
       }
@@ -190,7 +202,7 @@ export default function InterviewView({
             {isLastQuestion ? 'Finish & Analyze' : 'Next Question'}
           </Button>
 
-          <Button onClick={onFinish} size="lg" variant="destructive" disabled={!isReady || !hasCameraPermission}>
+          <Button onClick={handleEndInterview} size="lg" variant="destructive" disabled={!isReady || !hasCameraPermission}>
             <VideoOff className="mr-2" /> End Interview
           </Button>
         </div>

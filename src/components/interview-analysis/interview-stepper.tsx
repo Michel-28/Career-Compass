@@ -56,7 +56,9 @@ export default function InterviewStepper() {
   const handleFinish = async () => {
     setStep('analyzing');
     const dataUri = await stopRecording();
-    cleanup(); // Turn off camera now
+    
+    // Camera is already cleaned up by InterviewView, but we call it here as a fallback.
+    cleanup();
 
     if (!dataUri) {
         toast({
@@ -106,6 +108,7 @@ export default function InterviewStepper() {
             isReady={isReady}
             isRecording={isRecording}
             startRecording={startRecording}
+            cleanup={cleanup}
           />
         );
       case 'analyzing':
