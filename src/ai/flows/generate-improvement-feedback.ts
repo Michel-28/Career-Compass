@@ -50,7 +50,7 @@ const prompt = ai.definePrompt({
   Focus on areas where the candidate can realistically make improvements. Suggest areas to study and resources that might be helpful.
   Your response should only include the improvement suggestions, formatted as a single, flowing paragraph. Do not use markdown, lists, or bold text.
   `,
-  model: 'googleai/gemini-pro',
+  model: 'googleai/gemini-1.5-flash-latest',
 });
 
 const generateImprovementFeedbackFlow = ai.defineFlow(
