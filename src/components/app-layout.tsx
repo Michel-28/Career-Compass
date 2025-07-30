@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  Briefcase,
   Home,
   LogOut,
   User,
@@ -13,7 +12,6 @@ import {
   Sun,
   Sparkles,
   BarChart2,
-  BookUser,
   Crown,
   GraduationCap,
   Moon
@@ -29,13 +27,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Icons } from "@/components/icons";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "next-themes";
 
 const CareerCompassLogo = () => (
     <div className="flex items-center gap-2">
-        <GraduationCap className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-        <span className="text-xl font-bold text-indigo-900 dark:text-indigo-400">Career Compass</span>
+        <GraduationCap className="h-6 w-6 text-primary" />
+        <span className="text-xl font-bold text-primary">Career Compass</span>
     </div>
 )
 
@@ -57,8 +54,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-white dark:bg-background">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white dark:bg-background px-4 md:px-6 z-50">
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 z-50">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <CareerCompassLogo />
         </Link>
@@ -67,8 +64,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link
               key={link.href}
               href={link.href}
-              className={`transition-colors hover:text-gray-900 dark:hover:text-gray-50 ${
-                pathname === link.href ? "text-gray-900 dark:text-gray-50 font-semibold" : "text-gray-500 dark:text-gray-400"
+              className={`transition-colors hover:text-foreground ${
+                pathname === link.href ? "text-foreground font-semibold" : "text-muted-foreground"
               }`}
             >
               {link.label}
@@ -80,13 +77,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Sparkles className="mr-2 h-4 w-4"/>
                 Upgrade to Pro
             </Button>
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+            <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             >
-                {mounted && (theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />)}
+                {mounted && (theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />)}
             </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -119,7 +116,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </DropdownMenu>
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-4 bg-gray-50/50 dark:bg-background">
+      <main className="flex flex-1 flex-col gap-4 bg-muted/40">
         {children}
       </main>
     </div>

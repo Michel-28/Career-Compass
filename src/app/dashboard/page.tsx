@@ -6,8 +6,7 @@ import Link from "next/link";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BarChart, FileText, Lightbulb } from "lucide-react";
-import { Icons } from "@/components/icons";
+import { Calendar, BarChart, FileText, Lightbulb, Sparkles } from "lucide-react";
 
 type PastInterview = {
   id: string;
@@ -47,67 +46,68 @@ export default function DashboardPage() {
   return (
     <AppLayout>
         <main className="flex-1 p-4 md:p-8 bg-gray-50/50 dark:bg-background">
-            {/* Welcome Banner */}
-            <div className="bg-indigo-50 dark:bg-card rounded-lg p-6 flex items-center justify-between mb-8">
+            <div className="bg-primary/10 dark:bg-card rounded-lg p-6 flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <WelcomeBot />
                     <div>
-                        <h1 className="text-2xl font-bold text-indigo-900 dark:text-primary-foreground">Welcome back, {userName}!</h1>
-                        <p className="text-indigo-700 dark:text-muted-foreground">Ready for your next interview session?</p>
+                        <h1 className="text-2xl font-bold text-primary dark:text-primary-foreground">Welcome back, {userName}!</h1>
+                        <p className="text-primary/80 dark:text-muted-foreground">Ready for your next interview session?</p>
                     </div>
                 </div>
-                <Button className="bg-indigo-500 hover:bg-indigo-600 rounded-full p-3 h-auto shadow-lg">
-                    <Lightbulb className="h-6 w-6 text-white"/>
-                </Button>
+                <Link href="/interview/setup" passHref>
+                    <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-3 h-auto shadow-lg">
+                        <Sparkles className="h-6 w-6"/>
+                    </Button>
+                </Link>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2">
-                {/* Upcoming Interviews */}
-                <Card className="h-full">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="lg:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-indigo-600 dark:text-primary">Upcoming Interviews</CardTitle>
-                        <Calendar className="w-5 h-5 text-gray-400 dark:text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-center text-center text-gray-500 dark:text-muted-foreground min-h-[150px]">
-                        <p>No upcoming interviews scheduled</p>
-                    </CardContent>
-                </Card>
-
-                {/* Recent Performance */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-indigo-600 dark:text-primary">Recent Performance</CardTitle>
-                        <BarChart className="w-5 h-5 text-gray-400 dark:text-muted-foreground" />
+                        <CardTitle className="text-primary dark:text-primary-foreground">Recent Performance</CardTitle>
+                        <BarChart className="w-5 h-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="min-h-[150px]">
                         {pastInterviews.length > 0 ? (
                             <div className="space-y-4">
                             {pastInterviews.slice(0, 3).map((interview) => (
                                 <Link href={`/interview/${interview.id}/results`} key={interview.id} passHref>
-                                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary cursor-pointer">
+                                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 dark:hover:bg-secondary cursor-pointer">
                                         <div>
-                                            <p className="font-semibold text-gray-800 dark:text-primary-foreground">{interview.jobRole}</p>
-                                            <p className="text-sm text-gray-500 dark:text-muted-foreground">
+                                            <p className="font-semibold text-card-foreground dark:text-primary-foreground">{interview.jobRole}</p>
+                                            <p className="text-sm text-muted-foreground">
                                                 Interviewed on {new Date(interview.date).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        <div className="text-lg font-bold text-indigo-600 dark:text-primary">{interview.overallScore}/10</div>
+                                        <div className="text-lg font-bold text-primary dark:text-primary">{interview.overallScore}/10</div>
                                     </div>
                                 </Link>
                             ))}
                             </div>
                         ) : (
-                            <div className="flex items-center justify-center text-center text-gray-500 dark:text-muted-foreground h-full pt-10">
+                            <div className="flex items-center justify-center text-center text-muted-foreground h-full pt-10">
                                 <p>No completed interviews yet</p>
                             </div>
                         )}
                     </CardContent>
                 </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-primary dark:text-primary-foreground">Video Analysis</CardTitle>
+                        <Lightbulb className="w-5 h-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[150px] gap-4">
+                        <p>Get instant feedback on your body language and communication.</p>
+                         <Link href="/interview-analysis" passHref>
+                            <Button variant="outline">Start Analysis</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
             </div>
              <div className="mt-8 flex justify-center">
                  <Link href="/interview/setup" passHref>
-                    <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base dark:bg-primary dark:hover:bg-primary/90">
-                        Start New Interview
+                    <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base">
+                        Start New Mock Interview
                     </Button>
                 </Link>
             </div>
