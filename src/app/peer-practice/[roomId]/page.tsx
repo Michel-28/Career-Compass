@@ -12,19 +12,11 @@ export default function RoomPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const roomId = params.roomId as string;
-  const userId = searchParams.get('userId') || `user_${crypto.randomUUID()}`;
+  // Fallback to a random ID if not provided, for robustness.
+  const userId = searchParams.get('userId') || `user_${crypto.randomUUID().slice(0, 8)}`;
   const peerId = searchParams.get('peerId') || undefined;
 
-  const { localStream, remoteStream, isConnected, start, hangUp } = useWebRTC(roomId, userId, peerId);
-
-  useEffect(() => {
-    start();
-    
-    return () => {
-      hangUp();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { localStream, remoteStream, isConnected, hangUp } = useWebRTC(roomId, userId, peerId);
 
   const handleHangUp = () => {
     hangUp();

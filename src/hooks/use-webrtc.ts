@@ -13,7 +13,8 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
+  writeBatch,
+  getDocs,
 } from 'firebase/firestore';
 
 const servers = {
@@ -44,80 +45,93 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
   }, []);
 
   const createPeerConnection = useCallback((stream: MediaStream) => {
-    pc.current = new RTCPeerConnection(servers);
+    // Ensure any existing connection is closed
+    if (pc.current) {
+        pc.current.close();
+    }
+      
+    const newPc = new RTCPeerConnection(servers);
     
     stream.getTracks().forEach((track) => {
-        pc.current!.addTrack(track, stream);
+        newPc.addTrack(track, stream);
     });
 
-    pc.current.ontrack = (event) => {
+    newPc.ontrack = (event) => {
         setRemoteStream(event.streams[0]);
     };
 
-    pc.current.onconnectionstatechange = () => {
-        if(pc.current?.connectionState === 'connected') {
+    newPc.onconnectionstatechange = () => {
+        if(newPc.connectionState === 'connected') {
             setIsConnected(true);
-        } else if (pc.current?.connectionState === 'failed' || pc.current?.connectionState === 'disconnected') {
+        } else if (newPc.connectionState === 'failed' || newPc.connectionState === 'disconnected' || newPc.connectionState === 'closed') {
             setIsConnected(false);
         }
     }
+    pc.current = newPc;
   }, []);
 
-  const startCall = useCallback(async (stream: MediaStream) => {
-    if (!pc.current) return;
+  const startCall = useCallback(async () => {
+    if (!pc.current || !localStream) return;
     
     const roomRef = doc(firestore, 'rooms', roomId);
     const callerCandidatesCollection = collection(roomRef, 'callerCandidates');
-    const calleeCandidatesCollection = collection(roomRef, 'calleeCandidates');
-
+    
     pc.current.onicecandidate = async (event) => {
         if (event.candidate) {
             await addDoc(callerCandidatesCollection, event.candidate.toJSON());
         }
     };
 
-    const offerDescription = await pc.current.createOffer();
-    await pc.current.setLocalDescription(offerDescription);
+    const roomSnapshot = await getDoc(roomRef);
+    // Only create an offer if one doesn't exist
+    if (!roomSnapshot.exists() || !roomSnapshot.data()?.offer) {
+        const offerDescription = await pc.current.createOffer();
+        await pc.current.setLocalDescription(offerDescription);
 
-    const roomWithOffer = {
-      offer: {
-        type: offerDescription.type,
-        sdp: offerDescription.sdp,
-      },
-      users: [userId, peerId],
-    };
-
-    await setDoc(roomRef, roomWithOffer);
-
-    onSnapshot(roomRef, (snapshot) => {
+        const roomWithOffer = {
+            offer: {
+                type: offerDescription.type,
+                sdp: offerDescription.sdp,
+            },
+            users: [userId, peerId],
+        };
+        await setDoc(roomRef, roomWithOffer, { merge: true });
+    }
+    
+    const unsubscribeAnswer = onSnapshot(roomRef, (snapshot) => {
       const data = snapshot.data();
-      if (!pc.current?.currentRemoteDescription && data?.answer) {
+      if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
         const answerDescription = new RTCSessionDescription(data.answer);
         pc.current.setRemoteDescription(answerDescription);
       }
     });
 
-    onSnapshot(calleeCandidatesCollection, (snapshot) => {
+    const calleeCandidatesCollection = collection(roomRef, 'calleeCandidates');
+    const unsubscribeCalleeCandidates = onSnapshot(calleeCandidatesCollection, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const candidate = new RTCIceCandidate(change.doc.data());
-          pc.current!.addIceCandidate(candidate);
+          pc.current?.addIceCandidate(candidate);
         }
       });
     });
 
-  }, [roomId, userId, peerId]);
+    return () => {
+        unsubscribeAnswer();
+        unsubscribeCalleeCandidates();
+    };
+
+  }, [roomId, userId, peerId, localStream]);
 
 
-  const joinCall = useCallback(async (stream: MediaStream) => {
-      if(!pc.current) return;
+  const joinCall = useCallback(async () => {
+      if(!pc.current || !localStream) return;
 
       const roomRef = doc(firestore, 'rooms', roomId);
       const roomSnapshot = await getDoc(roomRef);
 
       if (!roomSnapshot.exists()) return;
 
-      const callerCandidatesCollection = collection(roomRef, 'callerCandidates');
       const calleeCandidatesCollection = collection(roomRef, 'calleeCandidates');
 
       pc.current.onicecandidate = async (event) => {
@@ -141,25 +155,31 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
 
       await updateDoc(roomRef, roomWithAnswer);
 
-      onSnapshot(callerCandidatesCollection, (snapshot) => {
+      const callerCandidatesCollection = collection(roomRef, 'callerCandidates');
+      const unsubscribeCallerCandidates = onSnapshot(callerCandidatesCollection, (snapshot) => {
           snapshot.docChanges().forEach((change) => {
               if (change.type === 'added') {
                   let data = change.doc.data();
-                  pc.current!.addIceCandidate(new RTCIceCandidate(data));
+                  pc.current?.addIceCandidate(new RTCIceCandidate(data));
               }
           });
       });
-  }, [roomId]);
+
+      return () => unsubscribeCallerCandidates();
+
+  }, [roomId, localStream]);
   
   const start = useCallback(async () => {
     const stream = await setupStreams();
     if(stream) {
         createPeerConnection(stream);
+        let unsubscribe: (() => void) | undefined;
         if(isCaller.current) {
-            await startCall(stream);
+            unsubscribe = await startCall();
         } else {
-            await joinCall(stream);
+            unsubscribe = await joinCall();
         }
+        return unsubscribe;
     }
   }, [setupStreams, createPeerConnection, startCall, joinCall]);
 
@@ -167,30 +187,54 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
   const hangUp = useCallback(async () => {
     localStream?.getTracks().forEach((track) => track.stop());
     remoteStream?.getTracks().forEach((track) => track.stop());
-    pc.current?.close();
+    if (pc.current) {
+      pc.current.close();
+      pc.current = null;
+    }
     
     // Clean up firebase
     const roomRef = doc(firestore, 'rooms', roomId);
     const roomSnapshot = await getDoc(roomRef);
     if(roomSnapshot.exists()) {
+        const batch = writeBatch(firestore);
+        
         const callerCandidatesQuery = query(collection(roomRef, 'callerCandidates'));
         const calleeCandidatesQuery = query(collection(roomRef, 'calleeCandidates'));
         
         const callerDocs = await getDocs(callerCandidatesQuery);
-        callerDocs.forEach(async doc => await deleteDoc(doc.ref));
+        callerDocs.forEach(doc => batch.delete(doc.ref));
 
         const calleeDocs = await getDocs(calleeCandidatesQuery);
-        calleeDocs.forEach(async doc => await deleteDoc(doc.ref));
+        calleeDocs.forEach(doc => batch.delete(doc.ref));
 
-        await deleteDoc(roomRef);
+        batch.delete(roomRef);
+        await batch.commit();
     }
     
     setLocalStream(null);
     setRemoteStream(null);
-    pc.current = null;
     setIsConnected(false);
 
   }, [localStream, remoteStream, roomId]);
+  
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    
+    const startConnection = async () => {
+        const unsub = await start();
+        unsubscribe = unsub;
+    };
+    
+    startConnection();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      hangUp();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return { localStream, remoteStream, isConnected, start, hangUp };
 }
