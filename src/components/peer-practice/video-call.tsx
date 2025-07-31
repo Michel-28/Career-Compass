@@ -44,9 +44,17 @@ export default function VideoCall({
   roomId,
 }: VideoCallProps) {
   const [isCopied, setIsCopied] = useState(false);
-  const inviteLink = `${window.location.origin}/peer-practice/${roomId}`;
+  const [inviteLink, setInviteLink] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setInviteLink(`${window.location.origin}/peer-practice/${roomId}`);
+    }
+  }, [roomId]);
+
 
   const handleCopyLink = () => {
+    if (!inviteLink) return;
     navigator.clipboard.writeText(inviteLink).then(() => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
@@ -66,7 +74,7 @@ export default function VideoCall({
             )}
             
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                <Button variant="outline" size="sm" onClick={handleCopyLink} disabled={!inviteLink}>
                     {isCopied ? <Check className="mr-2 h-4 w-4"/> : <Copy className="mr-2 h-4 w-4"/>}
                     {isCopied ? 'Copied!' : 'Copy Invite Link'}
                 </Button>
