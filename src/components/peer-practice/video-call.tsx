@@ -13,6 +13,7 @@ type VideoCallProps = {
   onHangUp: () => void;
   isConnected: boolean;
   roomId: string;
+  userId: string;
   error?: string | null;
   toggleMediaTrack: (kind: 'audio' | 'video', enabled?: boolean) => void;
 };
@@ -56,6 +57,7 @@ export default function VideoCall({
   onHangUp,
   isConnected,
   roomId,
+  userId,
   error,
   toggleMediaTrack,
 }: VideoCallProps) {
@@ -69,9 +71,10 @@ export default function VideoCall({
     if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         const baseUrl = `${url.protocol}//${url.host}`;
-        setInviteLink(`${baseUrl}/peer-practice/${roomId}?userId=${crypto.randomUUID().slice(0,8)}`);
+        // The invite link should contain the creator's ID as the peerId for the friend to join.
+        setInviteLink(`${baseUrl}/peer-practice/${roomId}?userId=${crypto.randomUUID().slice(0,8)}&peerId=${userId}`);
     }
-  }, [roomId]);
+  }, [roomId, userId]);
 
 
   const handleCopyLink = () => {
@@ -131,11 +134,11 @@ export default function VideoCall({
           </div>
         </CardContent>
         <CardContent className="flex justify-center gap-4 mt-4">
-           <Button variant={isAudioMuted ? "secondary" : "outline"} size="lg" onClick={handleToggleAudio} disabled={!!error || !isConnected}>
+           <Button variant={isAudioMuted ? "secondary" : "outline"} size="lg" onClick={handleToggleAudio} disabled={!!error}>
               {isAudioMuted ? <MicOff /> : <Mic />}
               <span className="sr-only">{isAudioMuted ? 'Unmute' : 'Mute'}</span>
            </Button>
-            <Button variant={isVideoOff ? "secondary" : "outline"} size="lg" onClick={handleToggleVideo} disabled={!!error || !isConnected}>
+            <Button variant={isVideoOff ? "secondary" : "outline"} size="lg" onClick={handleToggleVideo} disabled={!!error}>
               {isVideoOff ? <VideoOff /> : <Video />}
                <span className="sr-only">{isVideoOff ? 'Turn on camera' : 'Turn off camera'}</span>
            </Button>

@@ -12,8 +12,9 @@ export default function RoomPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const roomId = params.roomId as string;
-  // Fallback to a random ID if not provided, for robustness.
+  // The user's own ID is always generated.
   const userId = searchParams.get('userId') || `user_${crypto.randomUUID().slice(0, 8)}`;
+  // The peer's ID is only present if joining from an invite link.
   const peerId = searchParams.get('peerId') || undefined;
 
   const { localStream, remoteStream, isConnected, hangUp, error, toggleMediaTrack } = useWebRTC(roomId, userId, peerId);
@@ -32,6 +33,7 @@ export default function RoomPage() {
           onHangUp={handleHangUp}
           isConnected={isConnected}
           roomId={roomId}
+          userId={userId}
           error={error}
           toggleMediaTrack={toggleMediaTrack}
         />
