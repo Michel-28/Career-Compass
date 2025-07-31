@@ -30,6 +30,7 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const pc = useRef<RTCPeerConnection | null>(null);
   const isCaller = useRef(!peerId);
 
@@ -37,9 +38,15 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         setLocalStream(stream);
+        setError(null);
         return stream;
     } catch (e) {
         console.error("Error getting user media", e);
+        if (e instanceof Error && e.name === 'NotAllowedError') {
+             setError("Permission to access camera and microphone was denied.");
+        } else {
+            setError("Could not access camera and microphone.");
+        }
         return null;
     }
   }, []);
@@ -83,7 +90,6 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
     };
 
     const roomSnapshot = await getDoc(roomRef);
-    // Only create an offer if one doesn't exist
     if (!roomSnapshot.exists() || !roomSnapshot.data()?.offer) {
         const offerDescription = await pc.current.createOffer();
         await pc.current.setLocalDescription(offerDescription);
@@ -130,7 +136,10 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
       const roomRef = doc(firestore, 'rooms', roomId);
       const roomSnapshot = await getDoc(roomRef);
 
-      if (!roomSnapshot.exists()) return;
+      if (!roomSnapshot.exists()) {
+        setError("Room does not exist.");
+        return;
+      }
 
       const calleeCandidatesCollection = collection(roomRef, 'calleeCandidates');
 
@@ -141,7 +150,10 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
       };
 
       const offerDescription = roomSnapshot.data().offer;
-      await pc.current.setRemoteDescription(new RTCSessionDescription(offerDescription));
+      if (!pc.current.currentRemoteDescription) {
+        await pc.current.setRemoteDescription(new RTCSessionDescription(offerDescription));
+      }
+
 
       const answerDescription = await pc.current.createAnswer();
       await pc.current.setLocalDescription(answerDescription);
@@ -193,22 +205,26 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
     }
     
     // Clean up firebase
-    const roomRef = doc(firestore, 'rooms', roomId);
-    const roomSnapshot = await getDoc(roomRef);
-    if(roomSnapshot.exists()) {
-        const batch = writeBatch(firestore);
-        
-        const callerCandidatesQuery = query(collection(roomRef, 'callerCandidates'));
-        const calleeCandidatesQuery = query(collection(roomRef, 'calleeCandidates'));
-        
-        const callerDocs = await getDocs(callerCandidatesQuery);
-        callerDocs.forEach(doc => batch.delete(doc.ref));
+    try {
+        const roomRef = doc(firestore, 'rooms', roomId);
+        const roomSnapshot = await getDoc(roomRef);
+        if(roomSnapshot.exists()) {
+            const batch = writeBatch(firestore);
+            
+            const callerCandidatesQuery = query(collection(roomRef, 'callerCandidates'));
+            const calleeCandidatesQuery = query(collection(roomRef, 'calleeCandidates'));
+            
+            const callerDocs = await getDocs(callerCandidatesQuery);
+            callerDocs.forEach(doc => batch.delete(doc.ref));
 
-        const calleeDocs = await getDocs(calleeCandidatesQuery);
-        calleeDocs.forEach(doc => batch.delete(doc.ref));
+            const calleeDocs = await getDocs(calleeCandidatesQuery);
+            calleeDocs.forEach(doc => batch.delete(doc.ref));
 
-        batch.delete(roomRef);
-        await batch.commit();
+            batch.delete(roomRef);
+            await batch.commit();
+        }
+    } catch (e) {
+        console.error("Error during firebase cleanup: ", e);
     }
     
     setLocalStream(null);
@@ -236,5 +252,5 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { localStream, remoteStream, isConnected, start, hangUp };
+  return { localStream, remoteStream, isConnected, error, start, hangUp };
 }

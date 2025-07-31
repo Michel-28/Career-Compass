@@ -4,7 +4,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Mic, PhoneOff, Video, VideoOff, Copy, Check } from 'lucide-react';
+import { Loader2, Mic, PhoneOff, Video, VideoOff, Copy, Check, AlertTriangle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 type VideoCallProps = {
   localStream: MediaStream | null;
@@ -12,9 +13,10 @@ type VideoCallProps = {
   onHangUp: () => void;
   isConnected: boolean;
   roomId: string;
+  error?: string | null;
 };
 
-const VideoPlayer = ({ stream, muted = false }: { stream: MediaStream | null; muted?: boolean }) => {
+const VideoPlayer = ({ stream, muted = false, error }: { stream: MediaStream | null; muted?: boolean; error?: string | null }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -26,9 +28,20 @@ const VideoPlayer = ({ stream, muted = false }: { stream: MediaStream | null; mu
   return (
     <div className="bg-muted rounded-lg aspect-video flex items-center justify-center relative border overflow-hidden">
       <video ref={videoRef} autoPlay playsInline muted={muted} className="h-full w-full object-cover scale-x-[-1]" />
-      {!stream && (
+      {!stream && !error && (
         <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+       {error && (
+         <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 p-4">
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Permission Denied</AlertTitle>
+                <AlertDescription>
+                   Camera/Mic access is required. Please check your browser's site settings to allow access and refresh the page.
+                </AlertDescription>
+            </Alert>
         </div>
       )}
     </div>
@@ -42,6 +55,7 @@ export default function VideoCall({
   onHangUp,
   isConnected,
   roomId,
+  error,
 }: VideoCallProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
@@ -70,11 +84,11 @@ export default function VideoCall({
             {isConnected ? (
                 <CardDescription className="text-green-600 font-semibold animate-pulse">Peer Connected</CardDescription>
             ) : (
-                <CardDescription>Waiting for peer to join...</CardDescription>
+                <CardDescription>{error ? 'Connection Failed' : 'Waiting for peer to join...'}</CardDescription>
             )}
             
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleCopyLink} disabled={!inviteLink}>
+                <Button variant="outline" size="sm" onClick={handleCopyLink} disabled={!inviteLink || !!error}>
                     {isCopied ? <Check className="mr-2 h-4 w-4"/> : <Copy className="mr-2 h-4 w-4"/>}
                     {isCopied ? 'Copied!' : 'Copy Invite Link'}
                 </Button>
@@ -88,7 +102,7 @@ export default function VideoCall({
             <p className="text-sm text-center mt-2 font-medium">Peer's Camera</p>
           </div>
           <div>
-            <VideoPlayer stream={localStream} muted />
+            <VideoPlayer stream={localStream} muted error={error} />
             <p className="text-sm text-center mt-2 font-medium">Your Camera</p>
           </div>
         </CardContent>

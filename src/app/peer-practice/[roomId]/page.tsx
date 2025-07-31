@@ -16,7 +16,7 @@ export default function RoomPage() {
   const userId = searchParams.get('userId') || `user_${crypto.randomUUID().slice(0, 8)}`;
   const peerId = searchParams.get('peerId') || undefined;
 
-  const { localStream, remoteStream, isConnected, hangUp } = useWebRTC(roomId, userId, peerId);
+  const { localStream, remoteStream, isConnected, hangUp, error } = useWebRTC(roomId, userId, peerId);
 
   const handleHangUp = () => {
     hangUp();
@@ -32,6 +32,7 @@ export default function RoomPage() {
           onHangUp={handleHangUp}
           isConnected={isConnected}
           roomId={roomId}
+          error={error}
         />
       </main>
     </AppLayout>
