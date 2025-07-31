@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, User, UserPlus, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, onSnapshot, query, limit, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, limit, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export default function PeerPracticePage() {
@@ -28,33 +28,43 @@ export default function PeerPracticePage() {
                 // Match found
                 const peerDoc = querySnapshot.docs[0];
                 const peerId = peerDoc.id;
-                const roomId = crypto.randomUUID();
+                const roomId = peerDoc.data().roomId || crypto.randomUUID();
 
                 const batch = writeBatch(firestore);
-                batch.delete(peerDoc.ref);
+                // Signal to the waiting user that they have been matched
+                batch.update(peerDoc.ref, { matchedWith: userId, roomId });
                 
-                await batch.commit();
-
+                // We don't delete immediately, the waiting user will delete it.
+                // This ensures they get the matchedWith notification.
+                
                 toast({ title: "Peer Found!", description: "Redirecting to your practice room." });
                 router.push(`/peer-practice/${roomId}?userId=${userId}&peerId=${peerId}`);
 
             } else {
                 // No peer found, add to queue
-                const queueRef = collection(firestore, 'queue');
-                const userDocRef = (await addDoc(queueRef, { waiting: true, timestamp: new Date() })).withConverter(null);
+                const roomId = crypto.randomUUID();
+                const userDocRef = doc(firestore, 'queue', userId);
+                await writeBatch(firestore).set(userDocRef, { waiting: true, timestamp: new Date(), roomId }).commit();
                 
                 const unsubscribe = onSnapshot(userDocRef, (doc) => {
-                    if (!doc.exists()) {
-                        // This means we have been matched and removed from queue
+                    if (doc.exists() && doc.data().matchedWith) {
                         unsubscribe();
+                        const peerId = doc.data().matchedWith;
+                        
+                        const batch = writeBatch(firestore);
+                        batch.delete(userDocRef);
+                        batch.commit();
+
+                        toast({ title: "Peer Found!", description: "Redirecting to your practice room." });
+                        router.push(`/peer-practice/${roomId}?userId=${userId}&peerId=${peerId}`);
                     }
                 });
 
                 // Implement a timeout
                 setTimeout(async () => {
                     unsubscribe();
-                    const docSnap = await getDocs(query(collection(firestore, 'queue'), limit(1)));
-                    if (docSnap.docs.some(doc => doc.id === userDocRef.id)) {
+                    const docSnap = await getDoc(userDocRef);
+                    if (docSnap.exists() && !docSnap.data().matchedWith) {
                          const batch = writeBatch(firestore);
                          batch.delete(userDocRef);
                          await batch.commit();

@@ -67,7 +67,9 @@ export default function VideoCall({
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        setInviteLink(`${window.location.origin}/peer-practice/${roomId}`);
+        const url = new URL(window.location.href);
+        const baseUrl = `${url.protocol}//${url.host}`;
+        setInviteLink(`${baseUrl}/peer-practice/${roomId}?userId=${crypto.randomUUID().slice(0,8)}`);
     }
   }, [roomId]);
 
@@ -110,7 +112,7 @@ export default function VideoCall({
             )}
             
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleCopyLink} disabled={!inviteLink || !!error}>
+                <Button variant="outline" size="sm" onClick={handleCopyLink} disabled={!inviteLink || !!error || isConnected}>
                     {isCopied ? <Check className="mr-2 h-4 w-4"/> : <Copy className="mr-2 h-4 w-4"/>}
                     {isCopied ? 'Copied!' : 'Copy Invite Link'}
                 </Button>
@@ -129,11 +131,11 @@ export default function VideoCall({
           </div>
         </CardContent>
         <CardContent className="flex justify-center gap-4 mt-4">
-           <Button variant={isAudioMuted ? "secondary" : "outline"} size="lg" onClick={handleToggleAudio} disabled={!!error}>
+           <Button variant={isAudioMuted ? "secondary" : "outline"} size="lg" onClick={handleToggleAudio} disabled={!!error || !isConnected}>
               {isAudioMuted ? <MicOff /> : <Mic />}
               <span className="sr-only">{isAudioMuted ? 'Unmute' : 'Mute'}</span>
            </Button>
-            <Button variant={isVideoOff ? "secondary" : "outline"} size="lg" onClick={handleToggleVideo} disabled={!!error}>
+            <Button variant={isVideoOff ? "secondary" : "outline"} size="lg" onClick={handleToggleVideo} disabled={!!error || !isConnected}>
               {isVideoOff ? <VideoOff /> : <Video />}
                <span className="sr-only">{isVideoOff ? 'Turn on camera' : 'Turn off camera'}</span>
            </Button>
