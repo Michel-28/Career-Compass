@@ -42,7 +42,7 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
         return stream;
     } catch (e) {
         console.error("Error getting user media", e);
-        if (e instanceof Error && e.name === 'NotAllowedError') {
+        if (e instanceof Error && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
              setError("Permission to access camera and microphone was denied.");
         } else {
             setError("Could not access camera and microphone.");
@@ -51,10 +51,24 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
     }
   }, []);
 
-  const createPeerConnection = useCallback((stream: MediaStream) => {
-    // Ensure any existing connection is closed
+  const cleanupConnection = useCallback(() => {
     if (pc.current) {
+        pc.current.onicecandidate = null;
+        pc.current.ontrack = null;
+        pc.current.onconnectionstatechange = null;
         pc.current.close();
+        pc.current = null;
+    }
+    localStream?.getTracks().forEach((track) => track.stop());
+    setLocalStream(null);
+    setRemoteStream(null);
+    setIsConnected(false);
+  }, [localStream]);
+
+
+  const createPeerConnection = useCallback((stream: MediaStream) => {
+    if (pc.current) {
+        cleanupConnection();
     }
       
     const newPc = new RTCPeerConnection(servers);
@@ -75,15 +89,14 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
         }
     }
     pc.current = newPc;
-  }, []);
+    return newPc;
+  }, [cleanupConnection]);
 
-  const startCall = useCallback(async () => {
-    if (!pc.current || !localStream) return;
-    
+  const startCall = useCallback(async (connection: RTCPeerConnection) => {
     const roomRef = doc(firestore, 'rooms', roomId);
     const callerCandidatesCollection = collection(roomRef, 'callerCandidates');
     
-    pc.current.onicecandidate = async (event) => {
+    connection.onicecandidate = async (event) => {
         if (event.candidate) {
             await addDoc(callerCandidatesCollection, event.candidate.toJSON());
         }
@@ -91,24 +104,23 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
 
     const roomSnapshot = await getDoc(roomRef);
     if (!roomSnapshot.exists() || !roomSnapshot.data()?.offer) {
-        const offerDescription = await pc.current.createOffer();
-        await pc.current.setLocalDescription(offerDescription);
+        const offerDescription = await connection.createOffer();
+        await connection.setLocalDescription(offerDescription);
 
         const roomWithOffer = {
             offer: {
                 type: offerDescription.type,
                 sdp: offerDescription.sdp,
             },
-            users: [userId, peerId],
         };
-        await setDoc(roomRef, roomWithOffer, { merge: true });
+        await setDoc(roomRef, roomWithOffer);
     }
     
     const unsubscribeAnswer = onSnapshot(roomRef, (snapshot) => {
       const data = snapshot.data();
-      if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
+      if (connection && !connection.currentRemoteDescription && data?.answer) {
         const answerDescription = new RTCSessionDescription(data.answer);
-        pc.current.setRemoteDescription(answerDescription);
+        connection.setRemoteDescription(answerDescription);
       }
     });
 
@@ -117,7 +129,7 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const candidate = new RTCIceCandidate(change.doc.data());
-          pc.current?.addIceCandidate(candidate);
+          connection?.addIceCandidate(candidate);
         }
       });
     });
@@ -127,12 +139,10 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
         unsubscribeCalleeCandidates();
     };
 
-  }, [roomId, userId, peerId, localStream]);
+  }, [roomId]);
 
 
-  const joinCall = useCallback(async () => {
-      if(!pc.current || !localStream) return;
-
+  const joinCall = useCallback(async (connection: RTCPeerConnection) => {
       const roomRef = doc(firestore, 'rooms', roomId);
       const roomSnapshot = await getDoc(roomRef);
 
@@ -140,23 +150,21 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
         setError("Room does not exist.");
         return;
       }
+      
+      const offerDescription = roomSnapshot.data().offer;
+      if (!connection.currentRemoteDescription) {
+        await connection.setRemoteDescription(new RTCSessionDescription(offerDescription));
+      }
 
       const calleeCandidatesCollection = collection(roomRef, 'calleeCandidates');
-
-      pc.current.onicecandidate = async (event) => {
+      connection.onicecandidate = async (event) => {
           if (event.candidate) {
               await addDoc(calleeCandidatesCollection, event.candidate.toJSON());
           }
       };
 
-      const offerDescription = roomSnapshot.data().offer;
-      if (!pc.current.currentRemoteDescription) {
-        await pc.current.setRemoteDescription(new RTCSessionDescription(offerDescription));
-      }
-
-
-      const answerDescription = await pc.current.createAnswer();
-      await pc.current.setLocalDescription(answerDescription);
+      const answerDescription = await connection.createAnswer();
+      await connection.setLocalDescription(answerDescription);
 
       const roomWithAnswer = {
           answer: {
@@ -172,37 +180,17 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
           snapshot.docChanges().forEach((change) => {
               if (change.type === 'added') {
                   let data = change.doc.data();
-                  pc.current?.addIceCandidate(new RTCIceCandidate(data));
+                  connection?.addIceCandidate(new RTCIceCandidate(data));
               }
           });
       });
 
       return () => unsubscribeCallerCandidates();
 
-  }, [roomId, localStream]);
+  }, [roomId]);
   
-  const start = useCallback(async () => {
-    const stream = await setupStreams();
-    if(stream) {
-        createPeerConnection(stream);
-        let unsubscribe: (() => void) | undefined;
-        if(isCaller.current) {
-            unsubscribe = await startCall();
-        } else {
-            unsubscribe = await joinCall();
-        }
-        return unsubscribe;
-    }
-  }, [setupStreams, createPeerConnection, startCall, joinCall]);
-
-
   const hangUp = useCallback(async () => {
-    localStream?.getTracks().forEach((track) => track.stop());
-    remoteStream?.getTracks().forEach((track) => track.stop());
-    if (pc.current) {
-      pc.current.close();
-      pc.current = null;
-    }
+    cleanupConnection();
     
     // Clean up firebase
     try {
@@ -226,19 +214,31 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
     } catch (e) {
         console.error("Error during firebase cleanup: ", e);
     }
-    
-    setLocalStream(null);
-    setRemoteStream(null);
-    setIsConnected(false);
-
-  }, [localStream, remoteStream, roomId]);
+  }, [roomId, cleanupConnection]);
   
+  const toggleMediaTrack = (kind: 'audio' | 'video', enabled?: boolean) => {
+    if (localStream) {
+        const track = kind === 'video' ? localStream.getVideoTracks()[0] : localStream.getAudioTracks()[0];
+        if (track) {
+            track.enabled = enabled !== undefined ? enabled : !track.enabled;
+        }
+    }
+  };
+
+
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     
     const startConnection = async () => {
-        const unsub = await start();
-        unsubscribe = unsub;
+        const stream = await setupStreams();
+        if(stream) {
+            const connection = createPeerConnection(stream);
+            if(isCaller.current) {
+                unsubscribe = await startCall(connection);
+            } else {
+                unsubscribe = await joinCall(connection);
+            }
+        }
     };
     
     startConnection();
@@ -252,5 +252,5 @@ export function useWebRTC(roomId: string, userId: string, peerId?: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { localStream, remoteStream, isConnected, error, start, hangUp };
+  return { localStream, remoteStream, isConnected, error, hangUp, toggleMediaTrack };
 }
